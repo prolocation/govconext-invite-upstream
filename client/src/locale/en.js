@@ -12,24 +12,24 @@ const en = {
         header: {
             title: "Manage access to your applications",
             login: "Log in",
-            sup: "SURFconext Invite is by invitation only.",
+            sup: "govconext Invite is by invitation only.",
         },
         works: "How does it work?",
         adminFunction: "admin function",
         info: [
             //Arrays of titles and info blocks and if a function is an admin function
-            ["Invites", "<p>SURF invites institution managers who can create roles for their applications.</p>" +
-            "<p>Applications are services connected to SURFconext.</p>", true],
+            ["Invites", "<p>SURF invites organisation managers who can create roles for their applications.</p>" +
+            "<p>Applications are services connected to govconext.</p>", true],
             ["Roles", "<p>The application managers will invite colleagues for roles who can in turn invite users.</p>", true],
             ["Join", "<p>Invited colleagues who accept the invitation are granted access rights for the applications.</p><br/>", false],
-            ["Groups", "<p>The roles are actually group memberships that can be used in SURFconext authorisation rules, or provisioned as attributes or to external SCIM APIs.</p>", false]
+            ["Groups", "<p>The roles are actually group memberships that can be used in govconext authorisation rules, or provisioned as attributes or to external SCIM APIs.</p>", false]
         ],
-        footer: "<p>SURFconext Invite offers access management to SURFconext-connected service providers.</p>" +
-            "<p>Do you want to know more? <a href='https://support.surfconext.nl/invite-en'>Read more</a>.</p>",
+        footer: "<p>govconext Invite offers access management to govconext-connected service providers.</p>" +
+            "<p>Do you want to know more? <a href='https://support.govconext.nl/invite-en'>Read more</a>.</p>",
     },
     header: {
-        title: "SURFconext Invite",
-        subTitle: "Everything will be owl right",
+        title: "govconext Invite",
+        subTitle: "We're from the government. We're here to help.",
         links: {
             login: "Log in",
             system: "System",
@@ -63,7 +63,7 @@ const en = {
         acceptedInvitations: "Accepted"
     },
     home: {
-        access: "SURFconext Invite",
+        access: "govconext Invite",
     },
     impersonate: {
         exit: "Stop impersonating",
@@ -76,7 +76,7 @@ const en = {
     },
     access: {
         SUPER_USER: "Super User",
-        INSTITUTION_ADMIN: "Institution admin",
+        INSTITUTION_ADMIN: "Organization admin",
         MANAGER: "Manager",
         INVITER: "Inviter",
         GUEST: "User",
@@ -102,8 +102,8 @@ const en = {
         roles: "Roles",
         applications: "Applications",
         noRolesInfo: "You have no roles (which means you must be super-user)",
-        noRolesInstitutionAdmin: "You are an institution admin and you have no roles (but you might have access to applications)",
-        noRolesNoApplicationsInstitutionAdmin: "You are an institution admin, but you have no roles and apparently your institution has also no access to applications",
+        noRolesInstitutionAdmin: "You are an organisation admin and you have no roles (but you might have access to applications)",
+        noRolesNoApplicationsInstitutionAdmin: "You are an organisation admin, but you have no roles and apparently your organisation has also no access to applications",
         guestRoleOnly: "You are not an administrator. Are you looking for <a href='{{welcomeUrl}}'>for the apps you can access</a>?",
         rolesInfo: "You have the following roles",
         applicationsInfo: "You have access to the following applications",
@@ -165,15 +165,15 @@ const en = {
         hideAdvancedSettings: "Hide advanced invite settings",
         override: "Override of settings allowed?",
         manage: "Application",
-        manageMetaData: "SURFconext entity",
+        manageMetaData: "govconext entity",
         provisioning: "Provisioning",
         deleteFlash: "Role {{name}} has been deleted",
         deleteConfirmation: "Are you sure you want to delete this role?",
         createFlash: "Role {{name}} has been created",
         updateFlash: "Role {{name}} has been updated",
         unknownInManage: "Unknown in Manage",
-        unknownInManageToolTip: "The application for this role has been removed from the SURF backend. Please contact <a href=\"mailto:support@surfconext.nl\">support@surfconext.nl</a> to resolve this.",
-        unknownInManageDisabled: "The application for this role has been removed from the SURF backend. Therefore, you can't invite new users. Contact <a href=\"mailto:support@surfconext.nl\">support@surfconext.nl</a> to resolve this.",
+        unknownInManageToolTip: "The application for this role has been removed from the govconext backend. Please contact <a href=\"mailto:ondersteuning@govconext.nl\">ondersteuning@govconext.nl</a> to resolve this.",
+        unknownInManageDisabled: "The application for this role has been removed from the govconext backend. Therefore, you can't invite new users. Contact <a href=\"mailto:ondersteuning@govconext.nl\">ondersteuning@govconext.nl</a> to resolve this.",
         consequences: {
             info: "The following users will lose their access:",
             userInfo: "{{name}} ({{authority}}), last activity {{lastActivity}}",
@@ -186,12 +186,12 @@ const en = {
         new: "New Access Role",
         searchPlaceHolder: "Search for applications",
         noResults: "No applications found...",
-        name:"Application name",
+        name: "Application name",
         types: {
             saml20_sp: "Service Provider",
             oidc10_rp: "Relying Party"
         },
-        type:"Type",
+        type: "Type",
         organization: "Organization",
         url: "URL",
         roles: "Roles",
@@ -233,7 +233,7 @@ const en = {
         accepted: "Accepted",
         expired: "Expired",
         enforceEmailEquality: "Email equality",
-        eduIDOnly: "eduID only",
+        eduIDOnly: "govID only",
         new: "Invite manager or inviter",
         newInvitation: "Invite inviter",
         newInvite: "New invite",
@@ -303,7 +303,7 @@ const en = {
         alreadyExistsParent: "The {{attribute}} {{value}} already exists within {{parent}}",
         required: "{{attribute}} is required",
         invalid: "The value '{{value}}' is invalid for {{attribute}}",
-        error: "You can contact <a href=\"mailto:support@surfconext.nl?subject=Error SURF Invite reference {{reference}}\">support@surfconext.nl</a> for help.<br/><br/>" +
+        error: "You can contact <a href=\"mailto:ondersteuning@govconext.nl?subject=Error govconext Invite reference {{reference}}\">ondersteuning@govconext.nl</a> for help.<br/><br/>" +
             "The reference number for this exception is {{reference}}."
     },
     profile: {
@@ -311,17 +311,17 @@ const en = {
         your: "Your account was created on {{createdAt}}"
     },
     inviteOnly: {
-        welcome: "Welcome to SURFconext Invite",
+        welcome: "Welcome to govconext Invite",
         roles: "You don't have any roles.",
-        info: "SURFconext Invite is by invitation only. Please contact <a href='mailto:support@surfconext.nl'>support@surfconext.nl</a> with questions.",
+        info: "govconext Invite is by invitation only. Please contact <a href='mailto:ondersteuning@govconext.nl'>ondersteuning@govconext.nl</a> with questions.",
         preLogin: "Or ",
         login: "login",
         postLogin: " again with a different institution",
     },
     missingAttributes: {
-        welcome: "Welcome to SURFconext Invite",
-        attributes: "Your institution has not provided all required attributes. The following attributes are missing:",
-        info: "If you want more information, please contact <a href='mailto:support@surfconext.nl'>support@surfconext.nl</a>.",
+        welcome: "Welcome to govconext Invite",
+        attributes: "Your organisation has not provided all required attributes. The following attributes are missing:",
+        info: "If you want more information, please contact <a href='mailto:ondersteuning@govconext.nl'>ondersteuning@govconext.nl</a>.",
         preLogin: "Or ",
         login: "login",
         postLogin: " again with a different institution.",
@@ -342,9 +342,9 @@ const en = {
         role: "role",
         roles: "roles",
         progress: "1",
-        info: "SURFconext Invite provides access to application based on your roles.",
-        infoLogin: "You can log in with your institution account or eduID.",
-        infoLoginEduIDOnly: "You need to log in with eduID.",
+        info: "govconext Invite provides access to application based on your roles.",
+        infoLogin: "You can log in with your organisation account or govID.",
+        infoLoginEduIDOnly: "You need to log in with govID.",
         infoLoginAgain: "To accept the invitation you'll need to log in again.",
         login: "Log in",
         loginWithSub: "Log in",
@@ -361,7 +361,7 @@ const en = {
         history: "Invitation history"
     },
     institutionAdmin: {
-        welcome: "Welcome institution administrator of {{name}}! You can start with creating your first role and subsequently invite managers.",
+        welcome: "Welcome organisation administrator of {{name}}! You can start with creating your first role and subsequently invite managers.",
         create: "Create access role"
     },
     tokens: {
@@ -393,7 +393,7 @@ const en = {
         invitationIcon: "Invitation for {{email}} sent at {{createdAt}} with expiration date {{expiryDate}}",
         roleShortName: "The unique short name of the role within a provisioning. It is used to format the urn and therefore not all characters are allowed.",
         roleUrn: "The urn of the role. It is based on the sanitized name and the role identifier. It is used as the unique global identifier of this role and therefore not all characters are allowed.",
-        manageService: "The required service from SURFconext, with may have an optional provisioning",
+        manageService: "The required service from govconext, with may have an optional provisioning",
         defaultExpiryDays: "The default number of days the role will expire, from the moment a user has accepted the invitation for this role",
         enforceEmailEqualityTooltip: "When checked the invitee must accept the invitation with an account with the email address where the invitation was sent to",
         eduIDOnlyTooltip: "When checked the invitees will be required to login with eduID",
@@ -405,7 +405,7 @@ const en = {
         removeInvitation: "Delete all selected invitations",
         resendInvitation: "Resend all selected invitations",
         inviter: "Send invitations to persons who will - once accepted - gain user access to the application",
-        overrideSettingsAllowed: "When checked, invitations for this role can override the advanced settings (e.g. email equality, eduID only and the role expiry end date)",
+        overrideSettingsAllowed: "When checked, invitations for this role can override the advanced settings (e.g. email equality, govID only and the role expiry end date)",
         removeUserRole: "Remove all selected user roles",
         guestRoleIncludedTooltip: "Do you also want to grant the invitees the user role when they accept the invitation?",
         expiredUserRole: "This role will expire soon",
@@ -421,9 +421,9 @@ const en = {
     },
     footer: {
         terms: "Terms of Use",
-        termsLink: "https://support.surfconext.nl/terms-en",
+        termsLink: "https://support.govconext.nl/terms-en",
         privacy: "Privacy policy",
-        privacyLink: "https://support.surfconext.nl/privacy-en",
+        privacyLink: "https://support.govconext.nl/privacy-en",
         surfLink: "https://surf.nl",
     },
     expirations: {

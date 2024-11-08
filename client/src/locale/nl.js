@@ -12,23 +12,23 @@ const nl = {
         header: {
             title: "Toegang tot je applicaties",
             login: "Inloggen",
-            sup: "SURFconext Invite is alleen op uitnodiging te gebruiken.",
+            sup: "govconext Invite is alleen op uitnodiging te gebruiken.",
         },
         works: "Hoe werkt het?",
         adminFunction: "beheerfunctie",
         info: [
             //Arrays of titles and info blocks and if a function is an admin function
-            ["Uitnodigen", "<p>Instellingsbeheerders kunnen rollen aanmaken voor hun applicaties.</p>" +
-            "<p>Applicaties zijn aan SURFconext gekoppelde diensten.</p>", true],
+            ["Uitnodigen", "<p>organisatiebeheerders kunnen rollen aanmaken voor hun applicaties.</p>" +
+            "<p>Applicaties zijn aan govconext gekoppelde diensten.</p>", true],
             ["Rollen", "<p>Applicatiebeheerders nodigen collega's uit die op hun beurt gebruikers kunnen uitnodigen.</p>", true],
             ["Word lid", "<p>Uitgenodigde collega's die op de uitnodiging zijn ingegaan, krijgen toegang tot applicaties.</p><br/>", false],
-            ["Groepen", "<p>De rollen zijn eigenlijk groepslidmaatschappen die gebruikt kunnen worden in SURFconext-autorisatieregels, doorgegeven als attributen of via externe SCIM API's.</p>", false]
+            ["Groepen", "<p>De rollen zijn eigenlijk groepslidmaatschappen die gebruikt kunnen worden in govconext-autorisatieregels, doorgegeven als attributen of via externe SCIM API's.</p>", false]
         ],
-        footer: "<p>SURFconext Invite biedt toegangsbeheer voor onderwijs en onderzoek.</p>" +
-            "<p>Meer weten? <a href='https://support.surfconext.nl/invite'>Lees verder</a>.</p>",
+        footer: "<p>govconext Invite biedt toegangsbeheer voor onderwijs en onderzoek.</p>" +
+            "<p>Meer weten? <a href='https://support.govconext.nl/invite'>Lees verder</a>.</p>",
     },
     header: {
-        title: "SURFconext Invite",
+        title: "govconext Invite",
         subTitle: "Alles gaat uilstekend",
         links: {
             login: "Inloggen",
@@ -63,7 +63,7 @@ const nl = {
         acceptedInvitations: "Geaccepteerd"
     },
     home: {
-        access: "SURFconext Invite",
+        access: "govconext Invite",
     },
     impersonate: {
         exit: "Stop na-apen",
@@ -76,7 +76,7 @@ const nl = {
     },
     access: {
         SUPER_USER: "Super User",
-        INSTITUTION_ADMIN: "Instellingsmanager",
+        INSTITUTION_ADMIN: "organisatiemanager",
         MANAGER: "Manager",
         INVITER: "Uitnodiger",
         GUEST: "Gebruiker",
@@ -90,7 +90,7 @@ const nl = {
         name: "Naam",
         email: "E-mail",
         highestAuthority: "Rol",
-        schacHomeOrganization: "Instelling",
+        schacHomeOrganization: "Organisatie",
         lastActivity: "Laatst actief",
         eduPersonPrincipalName: "EPPN",
         sub: "Sub",
@@ -102,8 +102,8 @@ const nl = {
         roles: "Rollen",
         applications: "Applicaties",
         noRolesInfo: "Je hebt geen rollen (je bent een super-user)",
-        noRolesInstitutionAdmin: "Je bent instellingsmanager, maar hebt nog geen rollen (maar je hebt wel toegang tot je applicaties)",
-        noRolesNoApplicationsInstitutionAdmin: "Je bent instellingsmanager, maar je hebt geen rollen en je instelling heeft blijkbaar ook geen toegang tot applicaties.",
+        noRolesInstitutionAdmin: "Je bent organisatiemanager, maar hebt nog geen rollen (maar je hebt wel toegang tot je applicaties)",
+        noRolesNoApplicationsInstitutionAdmin: "Je bent organisatiemanager, maar je hebt geen rollen en je organisatie heeft blijkbaar ook geen toegang tot applicaties.",
         guestRoleOnly: "Je bent geen admin. Ben je op zoek naar de <a href='{{welcomeUrl}}'>applicaties waar je toegang to hebt</a>?",
         rolesInfo: "Je hebt de volgende rollen",
         applicationsInfo: "Je hebt toegang tot de volgende applicaties",
@@ -165,19 +165,20 @@ const nl = {
         hideAdvancedSettings: "Verberg geavanceerde configuratie uitnodiging",
         override: "Kan de configuratie worden aangepast bij uitnodigen?",
         manage: "Applicatie",
-        manageMetaData: "SURFconext entity",
+        manageMetaData: "govconext entity",
         provisioning: "Provisioning",
         deleteFlash: "Rol {{name}} is verwijderd",
         deleteConfirmation: "Weet je zeker dat je deze rol wil verwijderen?",
         createFlash: "Rol {{name}} is aangemaakt",
         updateFlash: "Rol {{name}} is bijgewerkt",
         unknownInManage: "Onbekend in Manage",
-        unknownInManageToolTip: "De applicatie voor deze rol is verwijderd in de SURF backend. Neem contact op met <a href=\"mailto:support@surfconext.nl\">support@surfconext.nl</a> om dit op te lossen.",
-        unknownInManageDisabled: "De applicatie voor deze rol is verwijderd in de SURF backend. Daarom kan je geen nieuwe gebruikers uitnodigen. Neem contact op met <a href=\"mailto:support@surfconext.nl\">support@surfconext.nl</a> om dit op te lossen.",
+        unknownInManageToolTip: "De applicatie voor deze rol is verwijderd in de govconext backend. Neem contact op met <a href=\"mailto:ondersteuning@govconext.nl\">ondersteuning@govconext.nl</a> om dit op te lossen.",
+        unknownInManageDisabled: "De applicatie voor deze rol is verwijderd in de govconext backend. Daarom kan je geen nieuwe gebruikers uitnodigen. Neem contact op met <a href=\"mailto:ondersteuning@govconext.nl\">ondersteuning@govconext.nl</a> om dit op te lossen.",
         consequences: {
             info: "De volgende gebruikers verliezen toegang tot deze rol:",
             userInfo: "{{name}} ({{authority}}), laatste activiteit {{lastActivity}}",
-            andMore: "En nog {{nbr}} meer.. Bekijk de lijst van huidige gebruikers voor meer details."        }
+            andMore: "En nog {{nbr}} meer.. Bekijk de lijst van huidige gebruikers voor meer details."
+        }
     },
     applications: {
         title: "Toegangsrollen voor deze applicatie",
@@ -185,12 +186,12 @@ const nl = {
         new: "Nieuwe toegangsrol",
         searchPlaceHolder: "Zoek naar applicaties",
         noResults: "Geen applicaties gevonden...",
-        name:"Applicatienaam",
+        name: "Applicatienaam",
         types: {
             saml20_sp: "Service Provider",
             oidc10_rp: "Relying Party"
         },
-        type:"Type",
+        type: "Type",
         organization: "Organisatie",
         url: "URL",
         roles: "Rollen",
@@ -302,7 +303,7 @@ const nl = {
         alreadyExistsParent: "Het {{attribute}} {{value}} bestaat al binnen {{parent}}",
         required: "{{attribute}} is verplicht",
         invalid: "De waarde '{{value}}' is niet geldig voor {{attribute}}",
-        error: "Je kunt contact opnemen met <a href=\"mailto:support@surfconext.nl?subject=Error SURF Invite referentie code {{reference}}\">support@surfconext.nl</a> voor hulp.<br/><br/>" +
+        error: "Je kunt contact opnemen met <a href=\"mailto:ondersteuning@govconext.nl?subject=Error govconext Invite referentie code {{reference}}\">ondersteuning@govconext.nl</a> voor hulp.<br/><br/>" +
             "De foutcode is {{reference}}."
     },
     profile: {
@@ -310,17 +311,17 @@ const nl = {
         your: "Je account is aangemaakt op {{createdAt}}"
     },
     inviteOnly: {
-        welcome: "Welkom bij SURFconext Invite",
+        welcome: "Welkom bij govconext Invite",
         roles: "Je hebt nog geen rollen.",
-        info: "SURFconext Invite is op uitnodiging. Neem bij vragen contact op met <a href='mailto:support@surfconext.nl'>support@surfconext.nl</a>.",
+        info: "govconext Invite is op uitnodiging. Neem bij vragen contact op met <a href='mailto:ondersteuning@govconext.nl'>ondersteuning@govconext.nl</a>.",
         preLogin: "Of ",
         login: "login",
         postLogin: " via een andere instelling",
     },
     missingAttributes: {
-        welcome: "Welkom bij SURFconext Invite",
-        attributes: "Je instelling gaf niet alle benodigde attributen vrij. De volgende ontbreken:",
-        info: "Hulp nodig? Neem <a href='mailto:support@surfconext.nl'>contact met ons op</a>.",
+        welcome: "Welkom bij govconext Invite",
+        attributes: "Je organisatie gaf niet alle benodigde attributen vrij. De volgende ontbreken:",
+        info: "Hulp nodig? Neem <a href='mailto:ondersteuning@govconext.nl'>contact met ons op</a>.",
         preLogin: "Of ",
         login: "login",
         postLogin: " via een andere instelling",
@@ -341,9 +342,9 @@ const nl = {
         role: "rol",
         roles: "rollen",
         progress: "1",
-        info: "SURFconext Invite geeft toegang tot applicaties op basis van je rol.",
-        infoLogin: "Je kunt inloggen met je instellings-account of eduID.",
-        infoLoginEduIDOnly: "Je moet inloggen met eduID.",
+        info: "govconext Invite geeft toegang tot applicaties op basis van je rol.",
+        infoLogin: "Je kunt inloggen met je organisatie-account of govID.",
+        infoLoginEduIDOnly: "Je moet inloggen met govID.",
         infoLoginAgain: "Om de uitnodiging te accepteren moet je opnieuw inloggen.",
         login: "Inloggen",
         loginWithSub: "Inloggen",
@@ -360,7 +361,7 @@ const nl = {
         history: "Geschiedenis van uitnodigingen"
     },
     institutionAdmin: {
-        welcome: "Welkom instellingsadmin van {{name}}! Je kan nu je eerste rol aanmaken en managers daarvoor uitnodigen.",
+        welcome: "Welkom organisatieadmin van {{name}}! Je kan nu je eerste rol aanmaken en managers daarvoor uitnodigen.",
         create: "Rol aanmaken"
     },
     tokens: {
@@ -392,10 +393,10 @@ const nl = {
         invitationIcon: "Uitnodiging aan {{email}} verstuurd op {{createdAt}} met verloopdatum {{expiryDate}}",
         roleShortName: "Een unieke korte naam voor de rol binnen een provisioning. Wordt gebruikt in de urn, daarom zijn niet alle tekens toegestaan.",
         roleUrn: "De urn van deze rol. Deze is gebaseerd op de opgeschoonde naam en de rol-identifier. Hij wordt gebruikt als de unieke globale identifier van deze rol en daarom zijn niet alle tekens toegestaan.",
-        manageService: "De vereiste dienst uit SURFconext, die optioneel een provisioning heeft.",
+        manageService: "De vereiste dienst uit govconext, die optioneel een provisioning heeft.",
         defaultExpiryDays: "Het standaardaantal dagen waarna de rol verloopt, gerekend vanaf het moment dat de gebruiker de uitnodiging voor de rol accepteert.",
         enforceEmailEqualityTooltip: "Indien ingeschakeld moet de genodigde de uitnodiging accepteren met een account dat hetzelfde e-mailadres voert als waarheen deze uitnodiging gestuurd is",
-        eduIDOnlyTooltip: "Indien ingeschakeld moeten de genodigden eduID gebruiken om in te loggen bij het accepteren",
+        eduIDOnlyTooltip: "Indien ingeschakeld moeten de genodigden govID gebruiken om in te loggen bij het accepteren",
         roleExpiryDateTooltip: "De einddatum van deze rol. Na deze datum wordt de rol verwijderd bij de gebruiker.",
         expiryDateTooltip: "De datum waarop deze uitnodiging verloopt",
         rolesTooltip: "Alle rollen die de genodigden verkrijgen na het accepteren van de uitnodiging",
@@ -404,7 +405,7 @@ const nl = {
         removeInvitation: "Verwijder alle geselecteerde uitnodigingen",
         resendInvitation: "Verstuur al de geselecteerde uitnodigingen opnieuw",
         inviter: "Verstuur uitnodigingen naar gebruikers die - na accepteren - en rol krijgen voor de applicatie",
-        overrideSettingsAllowed: "Indien ingeschakeld kunnen uitnodigingen voor de deze rol de geavanceerde configuratie aanpassen (waaronder of e-mailadres overeen moet komen, alleen accepteren met eduID en de verloop- en einddatum)",
+        overrideSettingsAllowed: "Indien ingeschakeld kunnen uitnodigingen voor de deze rol de geavanceerde configuratie aanpassen (waaronder of e-mailadres overeen moet komen, alleen accepteren met govID en de verloop- en einddatum)",
         removeUserRole: "Verwijder alle geselecteerde rollen",
         guestRoleIncludedTooltip: "Wil je dat de uitgenodigden ook gebruiker worden als ze de uitnodiging accepteren?",
         expiredUserRole: "Deze rol gaat verlopen binnen een maand",
@@ -420,9 +421,9 @@ const nl = {
     },
     footer: {
         terms: "Gebruiksvoorwaarden",
-        termsLink: "https://support.surfconext.nl/terms-nl",
+        termsLink: "https://support.govconext.nl/terms-nl",
         privacy: "Privacybeleid",
-        privacyLink: "https://support.surfconext.nl/privacy-nl",
+        privacyLink: "https://support.govconext.nl/privacy-nl",
         surfLink: "https://surf.nl",
     },
     expirations: {
