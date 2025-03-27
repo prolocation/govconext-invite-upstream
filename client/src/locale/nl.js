@@ -25,7 +25,7 @@ const nl = {
             ["Groepen", "<p>De rollen zijn eigenlijk groepslidmaatschappen die gebruikt kunnen worden in govconext-autorisatieregels, doorgegeven als attributen of via externe SCIM API's.</p>", false]
         ],
         footer: "<p>govconext Invite biedt toegangsbeheer voor onderwijs en onderzoek.</p>" +
-            "<p>Meer weten? <a href='https://support.govconext.nl/invite'>Lees verder</a>.</p>",
+            "<p>Meer weten? <a href='https://wiki.support.govroam.nl/wiki/spaces/govconext/overview'>Lees verder</a>.</p>",
     },
     header: {
         title: "govconext Invite",
@@ -172,8 +172,8 @@ const nl = {
         createFlash: "Rol {{name}} is aangemaakt",
         updateFlash: "Rol {{name}} is bijgewerkt",
         unknownInManage: "Onbekend in Manage",
-        unknownInManageToolTip: "De applicatie voor deze rol is verwijderd in de govconext backend. Neem contact op met <a href=\"mailto:ondersteuning@govconext.nl\">ondersteuning@govconext.nl</a> om dit op te lossen.",
-        unknownInManageDisabled: "De applicatie voor deze rol is verwijderd in de govconext backend. Daarom kan je geen nieuwe gebruikers uitnodigen. Neem contact op met <a href=\"mailto:ondersteuning@govconext.nl\">ondersteuning@govconext.nl</a> om dit op te lossen.",
+        unknownInManageToolTip: "De applicatie voor deze rol is verwijderd in de govconext backend. Neem contact op met <a href=\"mailto:ondersteuning@govroam.nl\">ondersteuning@govroam.nl</a> om dit op te lossen.",
+        unknownInManageDisabled: "De applicatie voor deze rol is verwijderd in de govconext backend. Daarom kan je geen nieuwe gebruikers uitnodigen. Neem contact op met <a href=\"mailto:ondersteuning@govroam.nl\">ondersteuning@govroam.nl</a> om dit op te lossen.",
         consequences: {
             info: "De volgende gebruikers verliezen toegang tot deze rol:",
             userInfo: "{{name}} ({{authority}}), laatste activiteit {{lastActivity}}",
@@ -303,7 +303,7 @@ const nl = {
         alreadyExistsParent: "Het {{attribute}} {{value}} bestaat al binnen {{parent}}",
         required: "{{attribute}} is verplicht",
         invalid: "De waarde '{{value}}' is niet geldig voor {{attribute}}",
-        error: "Je kunt contact opnemen met <a href=\"mailto:ondersteuning@govconext.nl?subject=Error govconext Invite referentie code {{reference}}\">ondersteuning@govconext.nl</a> voor hulp.<br/><br/>" +
+        error: "Je kunt contact opnemen met <a href=\"mailto:ondersteuning@govroam.nl?subject=Error govconext Invite referentie code {{reference}}\">ondersteuning@govroam.nl</a> voor hulp.<br/><br/>" +
             "De foutcode is {{reference}}."
     },
     profile: {
@@ -313,7 +313,7 @@ const nl = {
     inviteOnly: {
         welcome: "Welkom bij govconext Invite",
         roles: "Je hebt nog geen rollen.",
-        info: "govconext Invite is op uitnodiging. Neem bij vragen contact op met <a href='mailto:ondersteuning@govconext.nl'>ondersteuning@govconext.nl</a>.",
+        info: "govconext Invite is op uitnodiging. Neem bij vragen contact op met <a href='mailto:ondersteuning@govroam.nl'>ondersteuning@govroam.nl</a>.",
         preLogin: "Of ",
         login: "login",
         postLogin: " via een andere instelling",
@@ -321,7 +321,7 @@ const nl = {
     missingAttributes: {
         welcome: "Welkom bij govconext Invite",
         attributes: "Je organisatie gaf niet alle benodigde attributen vrij. De volgende ontbreken:",
-        info: "Hulp nodig? Neem <a href='mailto:ondersteuning@govconext.nl'>contact met ons op</a>.",
+        info: "Hulp nodig? Neem <a href='mailto:ondersteuning@govroam.nl'>contact met ons op</a>.",
         preLogin: "Of ",
         login: "login",
         postLogin: " via een andere instelling",
@@ -421,10 +421,10 @@ const nl = {
     },
     footer: {
         terms: "Gebruiksvoorwaarden",
-        termsLink: "https://support.govconext.nl/terms-nl",
+        termsLink: "https://govroam.nl/aansluiten/voorwaarden/",
         privacy: "Privacybeleid",
-        privacyLink: "https://support.govconext.nl/privacy-nl",
-        surfLink: "https://surf.nl",
+        privacyLink: "https://govroam.nl/stichting-govroam/privacy/",
+        surfLink: "https://govroam.nl",
     },
     expirations: {
         expires: "Verloopt {{relativeTime}}",

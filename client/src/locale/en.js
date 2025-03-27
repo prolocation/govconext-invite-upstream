@@ -18,14 +18,14 @@ const en = {
         adminFunction: "admin function",
         info: [
             //Arrays of titles and info blocks and if a function is an admin function
-            ["Invites", "<p>SURF invites organisation managers who can create roles for their applications.</p>" +
+            ["Invites", "<p>govroam invites organisation managers who can create roles for their applications.</p>" +
             "<p>Applications are services connected to govconext.</p>", true],
             ["Roles", "<p>The application managers will invite colleagues for roles who can in turn invite users.</p>", true],
             ["Join", "<p>Invited colleagues who accept the invitation are granted access rights for the applications.</p><br/>", false],
             ["Groups", "<p>The roles are actually group memberships that can be used in govconext authorisation rules, or provisioned as attributes or to external SCIM APIs.</p>", false]
         ],
         footer: "<p>govconext Invite offers access management to govconext-connected service providers.</p>" +
-            "<p>Do you want to know more? <a href='https://support.govconext.nl/invite-en'>Read more</a>.</p>",
+            "<p>Do you want to know more? <a href='https://wiki.support.govroam.nl/wiki/spaces/govconext/overview'>Read more</a>.</p>",
     },
     header: {
         title: "govconext Invite",
@@ -172,8 +172,8 @@ const en = {
         createFlash: "Role {{name}} has been created",
         updateFlash: "Role {{name}} has been updated",
         unknownInManage: "Unknown in Manage",
-        unknownInManageToolTip: "The application for this role has been removed from the govconext backend. Please contact <a href=\"mailto:ondersteuning@govconext.nl\">ondersteuning@govconext.nl</a> to resolve this.",
-        unknownInManageDisabled: "The application for this role has been removed from the govconext backend. Therefore, you can't invite new users. Contact <a href=\"mailto:ondersteuning@govconext.nl\">ondersteuning@govconext.nl</a> to resolve this.",
+        unknownInManageToolTip: "The application for this role has been removed from the govconext backend. Please contact <a href=\"mailto:ondersteuning@govroam.nl\">ondersteuning@govroam.nl</a> to resolve this.",
+        unknownInManageDisabled: "The application for this role has been removed from the govconext backend. Therefore, you can't invite new users. Contact <a href=\"mailto:ondersteuning@govroam.nl\">ondersteuning@govroam.nl</a> to resolve this.",
         consequences: {
             info: "The following users will lose their access:",
             userInfo: "{{name}} ({{authority}}), last activity {{lastActivity}}",
@@ -303,7 +303,7 @@ const en = {
         alreadyExistsParent: "The {{attribute}} {{value}} already exists within {{parent}}",
         required: "{{attribute}} is required",
         invalid: "The value '{{value}}' is invalid for {{attribute}}",
-        error: "You can contact <a href=\"mailto:ondersteuning@govconext.nl?subject=Error govconext Invite reference {{reference}}\">ondersteuning@govconext.nl</a> for help.<br/><br/>" +
+        error: "You can contact <a href=\"mailto:ondersteuning@govroam.nl?subject=Error govconext Invite reference {{reference}}\">ondersteuning@govroam.nl</a> for help.<br/><br/>" +
             "The reference number for this exception is {{reference}}."
     },
     profile: {
@@ -313,18 +313,18 @@ const en = {
     inviteOnly: {
         welcome: "Welcome to govconext Invite",
         roles: "You don't have any roles.",
-        info: "govconext Invite is by invitation only. Please contact <a href='mailto:ondersteuning@govconext.nl'>ondersteuning@govconext.nl</a> with questions.",
+        info: "govconext Invite is by invitation only. Please contact <a href='mailto:ondersteuning@govroam.nl'>ondersteuning@govroam.nl</a> with questions.",
         preLogin: "Or ",
         login: "login",
-        postLogin: " again with a different institution",
+        postLogin: " again with a different organization.",
     },
     missingAttributes: {
         welcome: "Welcome to govconext Invite",
         attributes: "Your organisation has not provided all required attributes. The following attributes are missing:",
-        info: "If you want more information, please contact <a href='mailto:ondersteuning@govconext.nl'>ondersteuning@govconext.nl</a>.",
+        info: "If you want more information, please contact <a href='mailto:ondersteuning@govroam.nl'>ondersteuning@govroam.nl</a>.",
         preLogin: "Or ",
         login: "login",
-        postLogin: " again with a different institution.",
+        postLogin: " again with a different organization.",
         sub: "sub",
         email: "email",
         givenName: "givenName",
@@ -353,7 +353,7 @@ const en = {
     },
     inviter: {
         welcome: "Welcome, {{name}}",
-        info: "Manage who gets access to the <strong>educational applications</strong> at <strong>your institution</strong>.",
+        info: "Manage who gets access to the <strong>educational applications</strong> at <strong>your organization</strong>.",
         sendInvite: "Send new invite",
         viewHistory: "view history",
         manage: "You can manage users and send invites for",
@@ -421,10 +421,10 @@ const en = {
     },
     footer: {
         terms: "Terms of Use",
-        termsLink: "https://support.govconext.nl/terms-en",
+        termsLink: "https://govroam.nl/aansluiten/voorwaarden/",
         privacy: "Privacy policy",
-        privacyLink: "https://support.govconext.nl/privacy-en",
-        surfLink: "https://surf.nl",
+        privacyLink: "https://govroam.nl/stichting-govroam/privacy/",
+        surfLink: "https://govroam.nl",
     },
     expirations: {
         expires: "Expires {{relativeTime}}",

@@ -18,8 +18,8 @@ const nl = {
             ["Word lid", "<p>Uitgenodigde collega's die op de uitnodiging zijn ingegaan krijgen toegang tot applicaties.</p><br/>", false],
             ["Groepen", "<p>De rollen zijn feitelijk groepslidmaatschappen die gebruikt kunnen worden in govconext autorisatieregels, doorgegeven als attributen of via externe SCIM API's.</p>", false]
         ],
-        footer: "<p>govconext Invite biedt toegangsbeheer voor het Nederlandse onderwijs en onderzoek.</p>" +
-            "<p>Meer weten? <a href='https://support.govconext.nl/invite'>Lees verder</a>.</p>",
+        footer: "<p>govconext Invite biedt toegangsbeheer voor aan govconext gekoppelde applicaties.</p>" +
+            "<p>Meer weten? <a href='https://wiki.support.govroam.nl/wiki/spaces/govconext/overview'>Lees verder</a>.</p>",
     },
     header: {
         title: "govconext Invite",
@@ -52,7 +52,7 @@ const nl = {
         and: "en",
         more: "Meer",
         less: "Minder",
-        error: "Je kunt <a href=\"mailto:ondersteuning@govconext.nl\">contact opnemen</a> voor meer informatie.<br/><br/>" +
+        error: "Je kunt <a href=\"mailto:ondersteuning@govroam.nl\">contact opnemen</a> voor meer informatie.<br/><br/>" +
             "Het foutmeldingsnummer is {{reference}}."
     },
     profile: {
@@ -65,7 +65,7 @@ const nl = {
     inviteOnly: {
         welcome: "Welkom bij govconext Invite",
         roles: "Je hebt nog geen rollen.",
-        info: "Deze applicatie is op uitnodiging. Heb je hierover vragen? Neem <a href='mailto:ondersteuning@govconext.nl'>contact met ons op</a>.",
+        info: "Deze applicatie is op uitnodiging. Heb je hierover vragen? Neem <a href='mailto:ondersteuning@govroam.nl'>contact met ons op</a>.",
         preLogin: "Of ",
         login: "login",
         postLogin: " via een andere instelling",
@@ -73,7 +73,7 @@ const nl = {
     missingAttributes: {
         welcome: "Welkom bij govconext Invite",
         attributes: "Je instelling gaf niet alle benodigde attributen vrij. De volgende ontbreken:",
-        info: "Hulp nodig? Neem <a href='mailto:ondersteuning@govconext.nl'>contact met ons op</a>.",
+        info: "Hulp nodig? Neem <a href='mailto:ondersteuning@govroam.nl'>contact met ons op</a>.",
         preLogin: "Of ",
         login: "login",
         postLogin: " via een andere instelling",
@@ -129,10 +129,10 @@ const nl = {
     },
     footer: {
         terms: "Gebruiksvoorwaarden",
-        termsLink: "https://support.govconext.nl/terms-nl",
+        termsLink: "https://govroam.nl/aansluiten/voorwaarden/",
         privacy: "Privacybeleid",
-        privacyLink: "https://support.govconext.nl/privacy-nl",
-        surfLink: "https://govconext.nl",
+        privacyLink: "https://govroam.nl/stichting-govroam/privacy/",
+        surfLink: "https://govroam.nl",
     },
     expirations: {
         expires: "Verloopt {{relativeTime}}",

@@ -18,8 +18,8 @@ const en = {
             ["Join", "<p>Invited colleagues who accept the invitation are granted access rights for the applications.</p><br/>", false],
             ["Groups", "<p>The roles are actually group memberships that can be used in govconext rules, or provisioned as attributes or to external SCIM API's.</p>", false]
         ],
-        footer: "<p>govconext Invite is a service for access management for research and education.</p>" +
-            "<p>Do you want to know more? <a href='https://support.govconext.nl/invite-en'>Read more</a>.</p>",
+        footer: "<p>govconext Invite is a service for access management towards govconext connected applications.</p>" +
+            "<p>Do you want to know more? <a href='https://wiki.support.govroam.nl/wiki/spaces/govconext/overview'>Read more</a>.</p>",
     },
     header: {
         title: "govconext Invite",
@@ -40,7 +40,7 @@ const en = {
     users: {
         roles: "Applications",
         noRolesInfo: "You have no applications (which means you must be super-user)",
-        noRolesFound: "You have not been invited for any guest roles for educational applications",
+        noRolesFound: "You have not been invited for any guest roles for applications",
         rolesInfo: "You have access to the following applications.",
         expiryDays: "Expiry days"
     },
@@ -52,20 +52,20 @@ const en = {
         and: "and",
         more: "More",
         less: "Less",
-        error: "You can <a href=\"mailto:ondersteuning@govconext.nl\">contact govconext Invite</a> for more information.<br/><br/>" +
+        error: "You can <a href=\"mailto:ondersteuning@govroam.nl\">contact govconext Invite</a> for more information.<br/><br/>" +
             "The reference number for this exception is {{reference}}."
     },
     profile: {
         welcome: "Welcome, {{name}}",
-        info: "Here are the educational applications you can access through govconext Invite",
-        toaster: "You are logged in with the organisation {{institution}} (",
+        info: "Here are the applications you can access through govconext Invite",
+        toaster: "You are logged in as organisation {{institution}} (",
         changeThis: "change this",
         tooltipApps: "You have been granted access to applications as a guest user by your institution"
     },
     inviteOnly: {
         welcome: "Welcome to govconext Invite",
         roles: "You don't have any roles.",
-        info: "The govconext Invite application is by invite only. If you want to enter, but don't have access, please contact <a href='mailto:ondersteuning@govconext.nl'>ondersteuning@govconext.nl</a>.",
+        info: "The govconext Invite application is by invite only. If you want to enter, but don't have access, please contact <a href='mailto:ondersteuning@govroam.nl'>ondersteuning@govroam.nl</a>.",
         preLogin: "Or ",
         login: "login",
         postLogin: " again with a different institution",
@@ -73,7 +73,7 @@ const en = {
     missingAttributes: {
         welcome: "Welcome to govconext Invite",
         attributes: "Your organisation has not provided all required attributes. The following attributes are missing:",
-        info: "If you want more information, please contact <a href='mailto:ondersteuning@govconext.nl'>ondersteuning@govconext.nl</a>.",
+        info: "If you want more information, please contact <a href='mailto:ondersteuning@govroam.nl'>ondersteuning@govroam.nl</a>.",
         preLogin: "Or ",
         login: "login",
         postLogin: " again with a different institution.",
@@ -129,10 +129,10 @@ const en = {
     },
     footer: {
         terms: "Terms of Use",
-        termsLink: "https://support.govconext.nl/terms-en",
+        termsLink: "https://govroam.nl/aansluiten/voorwaarden/",
         privacy: "Privacy policy",
-        privacyLink: "https://support.govconext.nl/privacy-en",
-        surfLink: "https://govconext.nl",
+        privacyLink: "https://govroam.nl/stichting-govroam/privacy/",
+        surfLink: "https://govroam.nl",
     },
     expirations: {
         expires: "Expires {{relativeTime}}",
