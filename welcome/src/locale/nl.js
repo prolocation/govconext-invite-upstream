@@ -6,23 +6,23 @@ const nl = {
         header: {
             title: "Toegang tot je applicaties",
             login: "Inloggen",
-            sup: "SURFconext Invite is alleen op uitnodiging.",
+            sup: "govconext Invite is alleen op uitnodiging.",
         },
         works: "Hoe werkt het?",
         adminFunction: "adminfunctie",
         info: [
             //Arrays of titles and info blocks and if a function is an admin function
             ["Uitnodigen", "<p>Instellingsbeheerders kunnen rollen aanmaken voor hun applicaties.</p>" +
-            "<p>Applicaties zijn diensten gekoppeld aan SURFconext.</p>", true],
+            "<p>Applicaties zijn diensten gekoppeld aan govconext.</p>", true],
             ["Rollen", "<p>De applicatiebeheerders nodigen collega's uit die op hun beurt weer gasten kunnen uitnodigen.</p>", true],
             ["Word lid", "<p>Uitgenodigde collega's die op de uitnodiging zijn ingegaan krijgen toegang tot applicaties.</p><br/>", false],
-            ["Groepen", "<p>De rollen zijn feitelijk groepslidmaatschappen die gebruikt kunnen worden in SURFconext autorisatieregels, doorgegeven als attributen of via externe SCIM API's.</p>", false]
+            ["Groepen", "<p>De rollen zijn feitelijk groepslidmaatschappen die gebruikt kunnen worden in govconext autorisatieregels, doorgegeven als attributen of via externe SCIM API's.</p>", false]
         ],
-        footer: "<p>SURFconext Invite biedt toegangsbeheer voor het Nederlandse onderwijs en onderzoek.</p>" +
-            "<p>Meer weten? <a href='https://support.surfconext.nl/invite'>Lees verder</a>.</p>",
+        footer: "<p>govconext Invite biedt toegangsbeheer voor het Nederlandse onderwijs en onderzoek.</p>" +
+            "<p>Meer weten? <a href='https://wiki.support.govroam.nl/wiki/spaces/govconext/overview'>Lees verder</a>.</p>",
     },
     header: {
-        title: "SURFconext Invite",
+        title: "govconext Invite",
         subTitle: "Alles gaat uilstekend",
         links: {
             login: "Inloggen",
@@ -35,7 +35,7 @@ const nl = {
         },
     },
     home: {
-        access: "SURFconext Invite",
+        access: "govconext Invite",
     },
     users: {
         roles: "Applicaties",
@@ -52,28 +52,28 @@ const nl = {
         and: "en",
         more: "Meer",
         less: "Minder",
-        error: "Je kunt <a href=\"mailto:support@surfconext.nl\">contact opnemen</a> voor meer informatie.<br/><br/>" +
+        error: "Je kunt <a href=\"mailto:ondersteuning@govroam.nl\">contact opnemen</a> voor meer informatie.<br/><br/>" +
             "Het foutmeldingsnummer is {{reference}}."
     },
     profile: {
         welcome: "Welkom, {{name}}",
-        info: "Hier zijn de applicaties waar je via SURFconext Invite toegang toe hebt.",
+        info: "Hier zijn de applicaties waar je via govconext Invite toegang toe hebt.",
         toaster: "Je bent ingelogd via {{institution}} (",
         changeThis: "wijzig",
         tooltipApps: "Je hebt toegang gekregen tot deze applicaties via een uitnodiging"
     },
     inviteOnly: {
-        welcome: "Welkom bij SURFconext Invite",
+        welcome: "Welkom bij govconext Invite",
         roles: "Je hebt nog geen rollen.",
-        info: "Deze applicatie is op uitnodiging. Heb je hierover vragen? Neem <a href='mailto:support@surfconext.nl'>contact met ons op</a>.",
+        info: "Deze applicatie is op uitnodiging. Heb je hierover vragen? Neem <a href='mailto:ondersteuning@govroam.nl'>contact met ons op</a>.",
         preLogin: "Of ",
         login: "log in",
         postLogin: " via een andere instelling",
     },
     missingAttributes: {
-        welcome: "Welkom bij SURFconext Invite",
+        welcome: "Welkom bij govconext Invite",
         attributes: "Je instelling gaf niet alle benodigde persoonsgegevens vrij. Het volgende ontbreekt:",
-        info: "Hulp nodig? Neem <a href='mailto:support@surfconext.nl'>contact met ons op</a>.",
+        info: "Hulp nodig? Neem <a href='mailto:ondersteuning@govroam.nl'>contact met ons op</a>.",
         preLogin: "Of ",
         login: "log in",
         postLogin: " via een andere instelling",
@@ -93,15 +93,15 @@ const nl = {
         role: "rol",
         roles: "rollen",
         progress: "1",
-        info: "SURFconext Invite geeft toegang tot applicaties op basis van je rol.",
+        info: "govconext Invite geeft toegang tot applicaties op basis van je rol.",
         infoLogin: "Je kunt inloggen met je instellings-account of eduID.",
         infoLoginEduIDOnly: "Je moet inloggen met eduID.",
         infoLoginAgain: "Om de uitnodiging te accepteren moet je opnieuw inloggen.",
         login: "Log in",
         loginWithSub: "Log in",
         access: "Toegang verleend",
-        applicationInfo: "Deze applicatie is toegevoegd aan je SURFconext Invite startpagina.",
-        applicationInfoMultiple:"Deze applicaties zijn toegevoegd aan je SURFconext Invite startpagina.",
+        applicationInfo: "Deze applicatie is toegevoegd aan je govconext Invite startpagina.",
+        applicationInfoMultiple:"Deze applicaties zijn toegevoegd aan je govconext Invite startpagina.",
         continue: "Doorgaan",
         emailMismatch: "De uitnodiger heeft aangegeven dat je de uitnodiging dient te accepteren met e-mailadres {{email}}, " +
             "maar je bent ingelogd met een account met een ander mailadres. Log opnieuw in met een ander account.",
@@ -132,10 +132,10 @@ const nl = {
     },
     footer: {
         terms: "Gebruiksvoorwaarden",
-        termsLink: "https://support.surfconext.nl/terms-nl",
+        termsLink: "https://govroam.nl/aansluiten/voorwaarden/",
         privacy: "Privacybeleid",
-        privacyLink: "https://support.surfconext.nl/privacy-nl",
-        surfLink: "https://surf.nl",
+        privacyLink: "https://govroam.nl/stichting-govroam/privacy/",
+        surfLink: "https://govroam.nl",
     },
     expirations: {
         expires: "Verloopt {{relativeTime}}",

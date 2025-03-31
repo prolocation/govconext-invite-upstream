@@ -1,8 +1,10 @@
 import React from "react";
 import I18n from "../locale/I18n";
 import "./Footer.scss"
-import {LanguageSelector} from "./LanguageSelector";
-import {Logo, LogoType} from "@surfnet/sds";
+import { LanguageSelector } from "./LanguageSelector";
+import { Logo, LogoType } from "@surfnet/sds";
+
+import { ReactComponent as CustomLogoIcon } from "../icons/govconext-logo.svg";
 
 export const Footer = () => {
 
@@ -14,18 +16,18 @@ export const Footer = () => {
                         <ul>
                             <li>
                                 <a href={I18n.t("footer.termsLink")} target="_blank"
-                                   rel="noopener noreferrer"><span>{I18n.t("footer.terms")}</span></a>
+                                    rel="noopener noreferrer"><span>{I18n.t("footer.terms")}</span></a>
                             </li>
                             <li>
                                 <a href={I18n.t("footer.privacyLink")} target="_blank"
-                                   rel="noopener noreferrer"><span>{I18n.t("footer.privacy")}</span></a>
+                                    rel="noopener noreferrer"><span>{I18n.t("footer.privacy")}</span></a>
                             </li>
                         </ul>
                     </nav>
-                    <LanguageSelector/>
+                    <LanguageSelector />
                     <div className="sds--branding">
                         <a href={I18n.t("footer.surfLink")} target="_blank"
-                           rel="noopener noreferrer">{<Logo label={""} position={LogoType.Bottom}/>}</a>
+                            rel="noopener noreferrer">{<Logo CustomLogo={CustomLogoIcon} label={""} position={LogoType.Bottom} />}</a>
                     </div>
                 </div>
             </div>

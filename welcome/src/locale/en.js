@@ -6,23 +6,23 @@ const en = {
         header: {
             title: "Get access to your applications",
             login: "Log in",
-            sup: "SURFconext Invite is by invite only.",
+            sup: "govconext Invite is by invite only.",
         },
         works: "How does it work?",
         adminFunction: "admin function",
         info: [
             //Arrays of titles and info blocks and if a function is an admin function
             ["Invites", "<p>SURF invites institution managers who can create roles for their applications.</p>" +
-            "<p>Applications are services connected to SURFconext.</p>", true],
+            "<p>Applications are services connected to govconext.</p>", true],
             ["Roles", "<p>The application managers will invite colleagues for roles who can in turn invite guests.</p>", true],
             ["Join", "<p>Invited colleagues who accept the invitation are granted access rights for the applications.</p><br/>", false],
-            ["Groups", "<p>The roles are actually group memberships that can be used in SURFconext rules, or provisioned as attributes or to external SCIM API's.</p>", false]
+            ["Groups", "<p>The roles are actually group memberships that can be used in govconext rules, or provisioned as attributes or to external SCIM API's.</p>", false]
         ],
-        footer: "<p>SURFconext Invite is a service for access management for research and education.</p>" +
-            "<p>Do you want to know more? <a href='https://support.surfconext.nl/invite-en'>Read more</a>.</p>",
+        footer: "<p>govconext Invite is a service for access management for research and education.</p>" +
+            "<p>Do you want to know more? <a href='https://wiki.support.govroam.nl/wiki/spaces/govconext/overview'>Read more</a>.</p>",
     },
     header: {
-        title: "SURFconext Invite",
+        title: "govconext Invite",
         subTitle: "Everything will be Owl right",
         links: {
             login: "Log in",
@@ -35,12 +35,12 @@ const en = {
         },
     },
     home: {
-        access: "SURFconext Invite",
+        access: "govconext Invite",
     },
     users: {
         roles: "Applications",
         noRolesInfo: "You have no applications (which means you must be super-user)",
-        noRolesFound: "You have not been invited for any guest roles for educational applications",
+        noRolesFound: "You have not been invited for any guest roles for applications",
         rolesInfo: "You have access to the following applications.",
         expiryDays: "Expiry days"
     },
@@ -52,28 +52,28 @@ const en = {
         and: "and",
         more: "More",
         less: "Less",
-        error: "You can <a href=\"mailto:support@surfconext.nl\">contact SURFconext Invite</a> for more information.<br/><br/>" +
+        error: "You can <a href=\"mailto:ondersteuning@govroam.nl\">contact govconext Invite</a> for more information.<br/><br/>" +
             "The reference number for this exception is {{reference}}."
     },
     profile: {
         welcome: "Welcome, {{name}}",
-        info: "Here are the educational applications you can access through SURFconext Invite",
+        info: "Here are the educational applications you can access through govconext Invite",
         toaster: "You are logged in with the institution {{institution}} (",
         changeThis: "change this",
         tooltipApps: "You have been granted access to applications as a guest user by your institution"
     },
     inviteOnly: {
-        welcome: "Welcome to SURFconext Invite",
+        welcome: "Welcome to govconext Invite",
         roles: "You don't have any roles.",
-        info: "The SURFconext Invite application is by invite only. If you want to enter, but don't have access, please contact <a href='mailto:support@surfconext.nl'>support@surfconext.nl</a>.",
+        info: "The govconext Invite application is by invite only. If you want to enter, but don't have access, please contact <a href='mailto:ondersteuning@govroam.nl'>ondersteuning@govroam.nl</a>.",
         preLogin: "Or ",
         login: "log in",
         postLogin: " again with a different institution",
     },
     missingAttributes: {
-        welcome: "Welcome to SURFconext Invite",
+        welcome: "Welcome to govconext Invite",
         attributes: "Your institution has not provided all required personal data. The following are missing:",
-        info: "If you want more information, please contact <a href='mailto:support@surfconext.nl'>support@surfconext.nl</a>.",
+        info: "If you want more information, please contact <a href='mailto:ondersteuning@govroam.nl'>ondersteuning@govroam.nl</a>.",
         preLogin: "Or ",
         login: "log in",
         postLogin: " again with a different institution.",
@@ -93,15 +93,15 @@ const en = {
         role: "role",
         roles: "roles",
         progress: "1",
-        info: "SURFconext Invite provides access to application based on your roles.",
+        info: "govconext Invite provides access to application based on your roles.",
         infoLogin: "You can log in with your institution account or eduID.",
         infoLoginEduIDOnly: "You must log in with eduID.",
         infoLoginAgain: "To accept the invitation you'll need to log in again.",
         login: "Log in",
         loginWithSub: "Log in",
         access: "Access granted",
-        applicationInfo: "This application has been added to your SURFconext Invite homepage.",
-        applicationInfoMultiple: "These applications have been added to your SURFconext Invite homepage.",
+        applicationInfo: "This application has been added to your govconext Invite homepage.",
+        applicationInfoMultiple: "These applications have been added to your govconext Invite homepage.",
         continue: "Continue",
         emailMismatch: "The inviter has indicated that you must accept this invitation with the email {{email}}, " +
             "but you have logged in with an account with a different email. Please log in in with a different account.",
@@ -131,10 +131,10 @@ const en = {
     },
     footer: {
         terms: "Terms of Use",
-        termsLink: "https://support.surfconext.nl/terms-en",
+        termsLink: "https://govroam.nl/aansluiten/voorwaarden/",
         privacy: "Privacy policy",
-        privacyLink: "https://support.surfconext.nl/privacy-en",
-        surfLink: "https://surf.nl",
+        privacyLink: "https://govroam.nl/stichting-govroam/privacy/",
+        surfLink: "https://govroam.nl",
     },
     expirations: {
         expires: "Expires {{relativeTime}}",
