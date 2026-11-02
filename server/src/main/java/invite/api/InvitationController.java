@@ -1,0 +1,633 @@
+package invite.api;
+
+import invite.audit.UserRoleAuditService;
+import invite.exception.InvitationEmailMatchingException;
+import invite.exception.InvitationExpiredException;
+import invite.exception.InvitationStatusException;
+import invite.exception.NotFoundException;
+import invite.exception.RemoteException;
+import invite.logging.AccessLogger;
+import invite.logging.Event;
+import invite.mail.MailBox;
+import invite.manage.Manage;
+import invite.model.AcceptInvitation;
+import invite.model.Authority;
+import invite.model.Invitation;
+import invite.model.InvitationRequest;
+import invite.model.InvitationResponse;
+import invite.model.InvitationRole;
+import invite.model.Organisation;
+import invite.model.Role;
+import invite.model.Status;
+import invite.model.StatusResponse;
+import invite.model.User;
+import invite.model.UserApplication;
+import invite.model.UserRole;
+import invite.model.UserRoleAudit;
+import invite.provision.Provisioning;
+import invite.provision.ProvisioningService;
+import invite.provision.graph.GraphResponse;
+import invite.provision.scim.OperationType;
+import invite.repository.ApplicationRepository;
+import invite.repository.InvitationRepository;
+import invite.repository.OrganisationRepository;
+import invite.repository.RoleRepository;
+import invite.repository.UserRepository;
+import invite.security.SuperAdmin;
+import invite.security.UserPermissions;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.Getter;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.net.URLDecoder;
+import java.nio.charset.Charset;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
+import static invite.SwaggerOpenIdConfig.API_TOKENS_SCHEME_NAME;
+import static invite.SwaggerOpenIdConfig.OPEN_ID_SCHEME_NAME;
+import static java.util.Collections.emptyList;
+
+@RestController
+@RequestMapping(value = {
+        "/api/v1/invitations",
+        "/api/external/v1/invitations"}
+        , produces = MediaType.APPLICATION_JSON_VALUE)
+@Transactional
+@SecurityRequirement(name = OPEN_ID_SCHEME_NAME, scopes = {"openid"})
+@SecurityRequirement(name = API_TOKENS_SCHEME_NAME)
+@EnableConfigurationProperties(SuperAdmin.class)
+public class InvitationController implements InvitationResource {
+
+    private static final Log LOG = LogFactory.getLog(InvitationController.class);
+
+    @Getter
+    private final MailBox mailBox;
+    @Getter
+    private final Manage manage;
+    @Getter
+    private final InvitationRepository invitationRepository;
+    @Getter
+    private final RoleRepository roleRepository;
+    private final UserRepository userRepository;
+    private final OrganisationRepository organisationRepository;
+    @Getter
+    private final ApplicationRepository applicationRepository;
+    private final ProvisioningService provisioningService;
+    private final SecurityContextRepository securityContextRepository;
+    private final SuperAdmin superAdmin;
+    private final InvitationOperations invitationOperations;
+    private final UserRoleAuditService userRoleAuditService;
+
+    public InvitationController(MailBox mailBox,
+                                Manage manage,
+                                InvitationRepository invitationRepository,
+                                UserRepository userRepository,
+                                RoleRepository roleRepository,
+                                OrganisationRepository organisationRepository,
+                                ApplicationRepository applicationRepository,
+                                ProvisioningService provisioningService,
+                                SecurityContextRepository securityContextRepository,
+                                SuperAdmin superAdmin, UserRoleAuditService userRoleAuditService) {
+        this.mailBox = mailBox;
+        this.manage = manage;
+        this.invitationRepository = invitationRepository;
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.organisationRepository = organisationRepository;
+        this.applicationRepository = applicationRepository;
+        this.provisioningService = provisioningService;
+        this.securityContextRepository = securityContextRepository;
+        this.superAdmin = superAdmin;
+        this.invitationOperations = new InvitationOperations(this);
+        this.userRoleAuditService = userRoleAuditService;
+    }
+
+    @PostMapping("")
+    @Operation(summary = "Invite member for existing Role",
+            description = """
+                    Invite a member for an existing role. An invitation email will be sent. Do not forget to set guestRoleIncluded to true.
+                    At least one email must be either present in invites or invitesWithInternalPlaceholderIdentifiers.
+                    When using the invitations you can also specify the
+                    internalPlaceholderIdentifier, which will be used as the externalId in the SCIM POST to /User.
+                    """,
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = InvitationRequest.class),
+                            examples = {@ExampleObject(value = """
+                                    {
+                                      "intendedAuthority": "INVITER",
+                                      "message": "Personal message included in the email",
+                                      "language": "en",
+                                      "guestRoleIncluded": true,
+                                      "suppressSendingEmails": false,
+                                      "invites": [
+                                        "admin@service.org"
+                                      ],
+                                      "invitesWithInternalPlaceholderIdentifiers": [
+                                        {
+                                          "email": "admin2@service.org",
+                                          "internalPlaceholderIdentifier": "4EFF937F-EE78-4A54-9FD8-A214FD64D7E1"
+                                        }
+                                      ],
+                                      "roleIdentifiers": [
+                                        99
+                                      ],
+                                      "manageIdentifiers": [],
+                                      "roleExpiryDate": 1760788376,
+                                      "expiryDate": 1730461976
+                                    }
+                                    """
+                            )}
+                    )}
+            ),
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Created",
+                            content = {@Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = InvitationResponse.class),
+                                    examples = {@ExampleObject(value = """
+                                            {
+                                              "status": 201,
+                                              "recipientInvitationURLs": [
+                                                {
+                                                  "recipient": "admin@service.nl",
+                                                  "invitationURL": "https://invite.test.surfconext.nl/invitation/accept?{hash}"
+                                                }
+                                              ]
+                                            }
+                                            """
+                                    )})}),
+                    @ApiResponse(responseCode = "400", description = "BadRequest",
+                            content = {@Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = StatusResponse.class),
+                                    examples = {
+                                            @ExampleObject(value = """
+                                                    {
+                                                      "timestamp": 1717672263253,
+                                                      "status": 400,
+                                                      "error": "BadRequest",
+                                                      "exception": "access.exception.UserRestrictionException",
+                                                      "message": "No access to application",
+                                                      "path": "/api/external/v1/invitations"
+                                                    }
+                                                    """
+                                            )})}),
+                    @ApiResponse(responseCode = "404", description = "Role not found",
+                            content = {@Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = StatusResponse.class),
+                                    examples = {@ExampleObject(value = """
+                                            {
+                                              "timestamp": 1717672263253,
+                                              "status": 404,
+                                              "error": "Not found",
+                                              "exception": "access.exception.NotFoundException",
+                                              "message": "Role not found",
+                                              "path": "/api/external/v1/invitations"
+                                            }
+                                            """
+                                    )})})})
+    public ResponseEntity<InvitationResponse> newInvitation(@Validated @RequestBody InvitationRequest invitationRequest,
+                                                            @Parameter(hidden = true) User user) {
+        LOG.debug(String.format("New invitation request by user %s", user.getEduPersonPrincipalName()));
+        User userFromDB = userRepository.getReferenceById(user.getId());
+        return this.invitationOperations.sendInvitation(invitationRequest, userFromDB, null);
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete an invitation", description = "Delete an existing invitation by ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Invitation deleted successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Invitation not found")
+    })
+    public ResponseEntity<Void> deleteInvitation(@PathVariable("id") Long id,
+                                                 @Parameter(hidden = true) User user) {
+        LOG.debug(String.format("/deleteInvitation/%s by user %s", id, user.getEduPersonPrincipalName()));
+        //We need to assert validations on the roles soo we need to load them
+        Invitation invitation = invitationRepository.findById(id).orElseThrow(() -> new NotFoundException("Invitation not found"));
+        List<Role> requestedRoles = invitation.getRoles().stream()
+                .map(InvitationRole::getRole).toList();
+        Authority intendedAuthority = invitation.getIntendedAuthority();
+
+        User userFromDB = userRepository.getReferenceById(user.getId());
+        UserPermissions.assertValidInvitation(userFromDB, intendedAuthority, requestedRoles);
+
+        AccessLogger.invitation(LOG, Event.Deleted, invitation);
+        invitationRepository.delete(invitation);
+
+        return Results.deleteResult();
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Resend an invitation", description = "Resend an existing invitation by ID to the invitee")
+    public ResponseEntity<Map<String, Integer>> resendInvitation(@PathVariable("id") Long id,
+                                                                 @Parameter(hidden = true) User user) {
+        LOG.debug(String.format("ResendInvitation with id %s by user %s ", id, user.getEduPersonPrincipalName()));
+
+        User userFromDB = userRepository.getReferenceById(user.getId());
+        return this.invitationOperations.resendInvitation(id, userFromDB, null);
+    }
+
+    @GetMapping("public")
+    @Operation(summary = "Get invitation by hash", description = "Retrieve an open invitation using its secure hash token")
+    @Transactional(readOnly = true)
+    public ResponseEntity<Invitation> getInvitation(@RequestParam("hash") String hash) {
+        LOG.debug(String.format("getInvitation with hash %s", hash));
+        Invitation invitation = invitationRepository.findByHash(hash).orElseThrow(() -> new NotFoundException("Invitation not found"));
+        if (!invitation.getStatus().equals(Status.OPEN)) {
+            throw new InvitationStatusException("Invitation is not OPEN anymore");
+        }
+        manage.addManageMetaData(invitation.getRoles().stream().map(InvitationRole::getRole).toList());
+        return ResponseEntity.ok(invitation);
+    }
+
+    @GetMapping("all")
+    @Operation(summary = "Get all open invitations", description = "Retrieve all open invitations (super user only)")
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<Invitation>> all(@Parameter(hidden = true) User user) {
+        LOG.debug("GET /all invitations");
+        UserPermissions.assertAuthority(user, Authority.SUPER_USER);
+        return ResponseEntity.ok(invitationRepository.findByStatus(Status.OPEN));
+    }
+
+
+    @PostMapping("accept")
+    @Operation(summary = "Accept an invitation", description = "Accept an invitation using invitation ID and hash token")
+    public ResponseEntity<Map<String, Object>> accept(@Validated @RequestBody AcceptInvitation acceptInvitation,
+                                                      Authentication authentication,
+                                                      HttpServletRequest servletRequest,
+                                                      HttpServletResponse servletResponse) {
+        Invitation invitation = invitationRepository.findByHash(acceptInvitation.hash())
+                .orElseThrow(() -> new NotFoundException("Invitation not found"));
+
+        LOG.debug("POST /accept invitation");
+
+        if (!invitation.getId().equals(acceptInvitation.invitationId())) {
+            throw new NotFoundException("Invitation not found");
+        }
+        if (!invitation.getStatus().equals(Status.OPEN)) {
+            throw new InvitationStatusException("Invitation is not OPEN anymore");
+        }
+        if (invitation.getExpiryDate().isBefore(Instant.now())) {
+            throw new InvitationExpiredException("Invitation has expired");
+        }
+        OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
+        Map<String, Object> attributes = token.getPrincipal().getAttributes();
+        String sub = (String) attributes.get("sub");
+
+        LOG.info(String.format("Accept invitation with id %s by user %s", invitation.getId(), sub));
+
+        Optional<User> optionalUser = userRepository.findBySubIgnoreCase(sub);
+        Authority intendedAuthority = invitation.getIntendedAuthority();
+        User user = optionalUser.orElseGet(() -> {
+            boolean superUser = this.superAdmin.getUsers().stream().anyMatch(superSub -> superSub.equals(sub))
+                    || intendedAuthority.equals(Authority.SUPER_USER);
+            return new User(superUser, attributes);
+        });
+
+        checkEmailEquality(user, invitation);
+        checkCrmUniqueOrganisation(user, invitation);
+
+        user.setLastActivity(Instant.now());
+
+        invitation.setStatus(Status.ACCEPTED);
+        invitation.setAcceptedAt(Instant.now());
+        invitation.setSubInvitee(sub);
+        invitationRepository.save(invitation);
+        AccessLogger.invitation(LOG, Event.Accepted, invitation);
+        User invitationInviter = invitation.getInviter();
+        if (invitation.isNotifyInviter() && invitationInviter != null && StringUtils.hasText(invitationInviter.getEmail())) {
+            mailBox.sendInvitationAcceptedMail(invitation, invitationInviter, user);
+        }
+
+        /*
+         * Chicken & egg problem. The user including his / hers roles must be first provisioned, and then we
+         * need to send the updateRoleRequests for each new Role of this user.
+         */
+        List<UserRole> newUserRoles = new ArrayList<>();
+        User inviter = invitation.getInviter();
+        invitation.getRoles()
+                .forEach(invitationRole -> {
+                    Role role = invitationRole.getRole();
+                    Optional<UserRole> optionalUserRole = user.getUserRoles().stream()
+                            .filter(userRole -> userRole.getRole().getId().equals(role.getId())).findFirst();
+                    if (optionalUserRole.isPresent()) {
+                        UserRole userRole = optionalUserRole.get();
+                        Authority currentAuthority = userRole.getAuthority();
+                        //Only act upon different authorities
+                        if (!currentAuthority.equals(intendedAuthority)) {
+                            boolean userRoleChanged = false;
+                            if (intendedAuthority.hasHigherRights(currentAuthority)) {
+                                userRole.setAuthority(intendedAuthority);
+                                userRole.setEndDate(invitation.getRoleExpiryDate());
+                                userRoleChanged = true;
+                            }
+                            if (currentAuthority.equals(Authority.GUEST) || intendedAuthority.equals(Authority.GUEST) ||
+                                    invitation.isGuestRoleIncluded()) {
+                                userRole.setGuestRoleIncluded(true);
+                                userRoleChanged = true;
+                            }
+                            if (userRoleChanged) {
+                                userRoleAuditService.logAction(userRole, UserRoleAudit.ActionType.UPDATE);
+                            }
+                        }
+                    } else {
+                        UserRole userRole = new UserRole(
+                                inviter != null ? inviter.getName() : invitation.getRemoteApiUser(),
+                                user,
+                                role,
+                                intendedAuthority,
+                                invitation.isGuestRoleIncluded(),
+                                invitation.getRoleExpiryDate());
+                        user.addUserRole(userRole);
+                        newUserRoles.add(userRole);
+                    }
+                });
+        if (intendedAuthority.equals(Authority.INSTITUTION_ADMIN) && inviter != null) {
+            user.setInstitutionAdmin(true);
+            user.setInstitutionAdminByInvite(true);
+            //Might be that a super-user has invited the institution admin or a different institution admin
+            if (inviter.isSuperUser()) {
+                user.setOrganizationGUID(invitation.getOrganizationGUID());
+            } else {
+                user.setOrganizationGUID(inviter.getOrganizationGUID());
+            }
+            //Rare case - a new institution admin has logged in, but was not yet enriched by the CustomOidcUserService
+            if (optionalUser.isEmpty()) {
+                saveOAuth2AuthenticationToken(authentication, user, servletRequest, servletResponse);
+            }
+        }
+        if (intendedAuthority.equals(Authority.APPLICATION_MANAGER)) {
+            invitation.getApplications()
+                    .forEach(invitationApplication -> user.addUserApplication(new UserApplication(invitationApplication.getApplication())));
+        }
+        user.setInternalPlaceholderIdentifier(invitation.getInternalPlaceholderIdentifier());
+        if (StringUtils.hasText(invitation.getCrmContactId())) {
+            user.setCrmContactId(invitation.getCrmContactId());
+            String crmOrganisationId = invitation.getCrmOrganisationId();
+            Organisation organisation = organisationRepository.findByCrmOrganisationId(crmOrganisationId)
+                    .orElseThrow(() -> new IllegalArgumentException("Organisation with crmOrganisationId not found" + crmOrganisationId));
+            user.setOrganisation(organisation);
+        }
+        userRepository.save(user);
+        AccessLogger.user(LOG, Event.Created, user);
+        newUserRoles.forEach(userRole -> userRoleAuditService.logAction(userRole, UserRoleAudit.ActionType.ADD));
+
+        //Only interact with the provisioning service if there is a guest role
+        boolean isGuest = user.getUserRoles().stream()
+                .anyMatch(userRole -> userRole.isGuestRoleIncluded() || userRole.getAuthority().equals(Authority.GUEST));
+        //Already provisioned users in the remote systems are ignored / excluded
+        Optional<GraphResponse> optionalGraphResponse = isGuest ? provisioningService.newUserRequest(user) : Optional.empty();
+        if (isGuest) {
+            newUserRoles.forEach(userRole -> provisioningService.updateGroupRequest(userRole, OperationType.add));
+        }
+        LOG.info(String.format("User %s accepted invitation with role(s) %s",
+                user.getEduPersonPrincipalName(),
+                invitation.getRoles().stream().map(role -> role.getRole().getName()).collect(Collectors.joining(", "))));
+
+        //Must be mutable, because of possible userWaitTime
+        Map<String, Object> body = new HashMap<>();
+        optionalGraphResponse.ifPresentOrElse(graphResponse -> {
+            if (graphResponse.isErrorResponse()) {
+                body.put("errorResponse", Boolean.TRUE);
+            } else {
+                body.put("inviteRedeemUrl", graphResponse.inviteRedeemUrl());
+            }
+        }, () -> body.put("status", "ok"));
+
+        if (!isGuest) {
+            //We are done then
+            return ResponseEntity.status(HttpStatus.CREATED).body(body);
+        }
+        // See if there is a userWaitTime on of the provisionings
+        List<Provisioning> provisionings = provisioningService.getProvisionings(newUserRoles);
+        provisionings.stream()
+                .filter(provisioning -> provisioning.getUserWaitTime() != null)
+                .max(Comparator.comparingInt(Provisioning::getUserWaitTime))
+                .ifPresent(provisioning -> {
+                    Set<String> manageIdentifiers = provisioning.getRemoteApplications().stream()
+                            .map(app -> app.manageId()).collect(Collectors.toSet());
+                    newUserRoles.stream()
+                            .map(userRole -> userRole.getRole())
+                            .filter(role -> role.getApplicationUsages().stream()
+                                    .anyMatch(appUsage -> manageIdentifiers.contains(appUsage.getApplication().getManageId())))
+                            .min(Comparator.comparing(Role::getName))
+                            .ifPresent(role -> {
+                                body.put("userWaitTime", provisioning.getUserWaitTime());
+                                body.put("role", role.getName());
+                            });
+                });
+        return ResponseEntity.status(HttpStatus.CREATED).body(body);
+    }
+
+    private void saveOAuth2AuthenticationToken(Authentication authentication,
+                                               User user,
+                                               HttpServletRequest servletRequest,
+                                               HttpServletResponse servletResponse) {
+        //Boilerplate code for setting updated Authentication on the SecurityContextHolder
+        OAuth2AuthenticationToken existingToken = (OAuth2AuthenticationToken) authentication;
+        DefaultOidcUser existingTokenPrincipal = (DefaultOidcUser) existingToken.getPrincipal();
+        //Claims of the tokenPrincipal are immutable, so we need to instantiate a new Map
+        Map<String, Object> claims = new HashMap<>(existingTokenPrincipal.getClaims());
+        claims.putAll(manage.enrichInstitutionAdmin(user.getOrganizationGUID(), claims));
+        DefaultOidcUser oidcUser = new DefaultOidcUser(
+                existingToken.getAuthorities(),
+                existingTokenPrincipal.getIdToken(),
+                new OidcUserInfo(claims)
+        );
+        OAuth2AuthenticationToken newToken = new OAuth2AuthenticationToken(
+                oidcUser,
+                existingToken.getAuthorities(),
+                existingToken.getAuthorizedClientRegistrationId()
+        );
+        SecurityContextHolder.getContext().setAuthentication(newToken);
+        //New in Spring security 6.x,
+        // See https://docs.spring.io/spring-security/reference/5.8/migration/servlet/session-management.html#_require_explicit_saving_of_securitycontextrepository
+        securityContextRepository.saveContext(SecurityContextHolder.getContext(), servletRequest, servletResponse);
+    }
+
+    @GetMapping("roles/{roleId}")
+    @Operation(summary = "Get open invitations by Role", description = "Retrieve all open invitations for a specific role ID")
+    public ResponseEntity<List<Invitation>> byRole(@PathVariable("roleId") Long roleId, @Parameter(hidden = true) User user) {
+        LOG.debug(String.format("GET /roles/%s by user %s", roleId, user.getEduPersonPrincipalName()));
+
+        Role role = roleRepository.findById(roleId).orElseThrow(() -> new NotFoundException("Role not found"));
+
+        User userFromDB = userRepository.getReferenceById(user.getId());
+        UserPermissions.assertRoleAccess(userFromDB, role, Authority.INVITER);
+        List<Invitation> invitations = invitationRepository.findByStatusAndRoles_role(Status.OPEN, role);
+        return ResponseEntity.ok(invitations);
+    }
+
+    @GetMapping("search")
+    @Operation(summary = "Search invitations", description = "Search and paginate invitations optionally filtered by role ID and search query")
+    @Transactional(readOnly = true)
+    public ResponseEntity<Page<Map<String, Object>>> search(@Parameter(hidden = true) User user,
+                                                            @RequestParam(value = "roleId", required = false) Long roleId,
+                                                            @RequestParam(value = "query", required = false, defaultValue = "") String query,
+                                                            @RequestParam(value = "pageNumber", required = false, defaultValue = "0") int pageNumber,
+                                                            @RequestParam(value = "pageSize", required = false, defaultValue = "10") int pageSize,
+                                                            @RequestParam(value = "sort", required = false, defaultValue = "name") String sort,
+                                                            @RequestParam(value = "sortDirection", required = false, defaultValue = "ASC") String sortDirection) {
+        LOG.debug(String.format("GET /search for invitations %s", user.getEduPersonPrincipalName()));
+
+        Page<Map<String, Object>> invitationsPage;
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.fromString(sortDirection), sort));
+        boolean queryHasText = StringUtils.hasText(query);
+        query = queryHasText ? URLDecoder.decode(query, Charset.defaultCharset()) : query;
+        String parsedQuery = queryHasText ? FullSearchQueryParser.parse(query) : "";
+        boolean noSearchTokens = parsedQuery.equals("*");
+
+        if (roleId == null) {
+            UserPermissions.assertSuperUser(user);
+            if (queryHasText && !noSearchTokens) {
+                invitationsPage = invitationRepository.searchByStatusPageWithKeyword(Status.OPEN.name(), parsedQuery, pageable);
+            } else if (noSearchTokens) {
+                //Rare condition if users search on kb.nl, at@ex where all the parsed tokens are < 3 characters
+                query = query.toUpperCase() + "%";
+                invitationsPage = invitationRepository.searchByStatusPageWithStrictSearch(Status.OPEN.name(), query, pageable);
+            } else {
+                invitationsPage = invitationRepository.searchByStatusPage(Status.OPEN.name(), pageable);
+            }
+        } else {
+            Role role = roleRepository.findById(roleId).orElseThrow(() -> new NotFoundException("Role not found"));
+            User userFromDB = userRepository.getReferenceById(user.getId());
+            UserPermissions.assertRoleAccess(userFromDB, role, Authority.INVITER);
+            if (queryHasText && !noSearchTokens) {
+                invitationsPage = invitationRepository.searchByStatusAndRoleWithKeywordPage(Status.OPEN.name(), role.getId(), parsedQuery, pageable);
+            } else if (noSearchTokens) {
+                //Rare condition if users search on kb.nl, at@ex where all the parsed tokens are < 3 characters
+                query = query.toUpperCase() + "%";
+                invitationsPage = invitationRepository.searchByStatusAndRoleWithStrictSearch(Status.OPEN.name(), role.getId(), query, pageable);
+            } else {
+                invitationsPage = invitationRepository.searchByStatusAndRolePage(Status.OPEN.name(), role.getId(), pageable);
+            }
+        }
+        if (invitationsPage.getTotalElements() == 0L) {
+            return ResponseEntity.ok(invitationsPage);
+        }
+        List<Long> invitationIdentifiers = invitationsPage.getContent().stream()
+                .map(m -> (Long) m.get("id")).toList();
+        //The rolesAndManageIdentifiers is a cartesian product, but the relationship between invitation, role and application is mainly 1-1-1
+        List<Map<String, Object>> rolesAndManageIdentifiers = invitationRepository.findRoles(invitationIdentifiers);
+        Map<Long, List<Map<String, Object>>> rolesGroupedByInvitation = rolesAndManageIdentifiers
+                .stream()
+                .collect(Collectors.groupingBy(m -> (Long) m.get("id")));
+        //We need to add all roles, but also a list of manageIdentifiers for each role
+        List<Map<String, Object>> invitations = invitationsPage.getContent()
+                .stream()
+                //Must copy to avoid java.lang.UnsupportedOperationException: A TupleBackedMap cannot be modified
+                .map(invitationMap -> {
+                    Map<String, Object> copy = new HashMap<>(invitationMap);
+                    List<Map<String, Object>> aggregatedRoles = rolesGroupedByInvitation.get((Long) invitationMap.get("id"));
+                    //For Invitations for SuperUsers and InstitutionAdmins have no userRoles
+                    if (CollectionUtils.isEmpty(aggregatedRoles)) {
+                        copy.put("roles", emptyList());
+                        return copy;
+                    }
+                    Map<Long, List<Map<String, Object>>> rolesGroupedByRole = aggregatedRoles
+                            .stream()
+                            .collect(Collectors.groupingBy(m -> (Long) m.get("role_id")));
+                    List<Map<String, Object>> roles = rolesGroupedByRole
+                            .entrySet()
+                            .stream()
+                            .map(entry -> Map.of(
+                                    "id", entry.getKey(),
+                                    "name", entry.getValue().getFirst().get("name"),
+                                    "manageIdentifiers", entry.getValue().stream().map(m -> m.get("manage_id")).toList()
+                            ))
+                            .toList();
+                    copy.put("roles", roles);
+                    return copy;
+                })
+                .toList();
+        return Pagination.of(invitationsPage, invitations);
+    }
+
+    @GetMapping("/mine")
+    @Operation(summary = "Get my invitations", description = "Retrieve all open invitations created by the current authenticated user")
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<Invitation>> mine(@Parameter(hidden = true) User user) {
+        LOG.debug("GET /mine invitations");
+        UserPermissions.assertAuthority(user, Authority.INSTITUTION_ADMIN);
+        return ResponseEntity.ok(invitationRepository.findByInviterAndStatus(user, Status.OPEN));
+    }
+
+
+    private void checkEmailEquality(User user, Invitation invitation) {
+        if (invitation.isEnforceEmailEquality() && !invitation.getEmail().equalsIgnoreCase(user.getEmail())) {
+            throw new InvitationEmailMatchingException(
+                    String.format("Invitation email %s does not match user email %s", invitation.getEmail(), user.getEmail()));
+        }
+    }
+
+    private void checkCrmUniqueOrganisation(User user, Invitation invitation) {
+        String invitationCrmContactId = invitation.getCrmContactId();
+        Organisation organisation = user.getOrganisation();
+        if (StringUtils.hasText(invitationCrmContactId) && organisation != null) {
+            AtomicBoolean throwException = new AtomicBoolean(false);
+            if (!Objects.equals(organisation.getCrmOrganisationId(), invitation.getCrmOrganisationId())) {
+                throwException.set(true);
+            }
+            Optional<User> optionalUser = userRepository.findByCrmContactIdAndOrganisation(
+                    invitationCrmContactId, organisation);
+            optionalUser.ifPresent(userFromDB -> {
+                if (!userFromDB.getId().equals(user.getId())) {
+                    throwException.set(true);
+                }
+            });
+            if (throwException.get()) {
+                throw new RemoteException(HttpStatus.NOT_ACCEPTABLE,
+                        String.format("User %s with CRM contactID %s is not allowed to accept an invitation from Organisation %s",
+                                user.getEmail(),
+                                user.getCrmContactId(),
+                                invitation.getCrmOrganisationId()
+                        ), null);
+            }
+        }
+    }
+}

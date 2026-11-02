@@ -4,24 +4,42 @@ import {isEmpty} from "./Utils";
 
 let timeAgoInitialized = false;
 
-export const futureDate = (daysAhead, fromDate = new Date()) => {
-    const time = fromDate.getTime() + (1000 * 60 * 60 * 24 * daysAhead);
+export const futureDate = (daysAhead, fromDate) => {
+    const baseDate = isEmpty(fromDate) ? new Date() : fromDate;
+    const time = baseDate.getTime() + (1000 * 60 * 60 * 24 * daysAhead);
     return new Date(time);
 }
 
-export const shortDateFromEpoch = (epoch, needsMultiplier = true) => {
-    const options = {month: "short", day: "numeric", year: "numeric"};
-    const dateTimeFormat = new Intl.DateTimeFormat(`${I18n.locale}-${I18n.locale.toUpperCase()}`, options);
-    return dateTimeFormat.format(new Date(needsMultiplier ? epoch * 1000 : epoch));
+export const deriveExpirationDate = role => {
+    if (!isEmpty(role.defaultExpiryDate)) {
+        //When the role is serialized from the Server, then the defaultExpiryDate in epoch / 1000, else a genuine Date
+        return role.defaultExpiryDate.getTime ? role.defaultExpiryDate : new Date(role.defaultExpiryDate * 1000);
+    }
+    return futureDate(role.defaultExpiryDays || 365);
 }
 
-export const dateFromEpoch = (epoch, needsMultiplier = true) => {
+const formatOptions = {month: "short", day: "numeric", year: "numeric"};
+
+export const shortDateFromEpoch = (epoch, needsMultiplier = true) => {
     if (isEmpty(epoch)) {
         return "-";
     }
-    const options = {month: "long", day: "numeric", year: "numeric"};
-    const dateTimeFormat = new Intl.DateTimeFormat(`${I18n.locale}-${I18n.locale.toUpperCase()}`, options)
+    const dateTimeFormat = new Intl.DateTimeFormat(`${I18n.locale}-${I18n.locale.toUpperCase()}`, formatOptions);
     return dateTimeFormat.format(new Date(needsMultiplier ? epoch * 1000 : epoch));
+}
+
+const longFormatOptions = {weekday: "long", day: "numeric", month: "long", year: "numeric"};
+
+export const longDateFormat = date => {
+    if (isEmpty(date)) {
+        return "";
+    }
+    const dateTimeFormat = new Intl.DateTimeFormat(`${I18n.locale}-${I18n.locale.toUpperCase()}`, longFormatOptions);
+    return dateTimeFormat.format(date);
+}
+
+export const dateFromEpoch = (epoch, needsMultiplier = true) => {
+    return shortDateFromEpoch(epoch, needsMultiplier);
 }
 
 export const languageSwitched = () => {

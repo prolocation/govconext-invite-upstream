@@ -20,17 +20,17 @@ jobs:
       version: ${{ steps.versioncheck.outputs.version }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           java-version: 21
           distribution: "temurin"
 
       - name: Set up cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.m2/repository
           key: "${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}"
@@ -55,7 +55,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch' && steps.versioncheck.outputs.version != github.ref_name
 
       - name: Set up JDK 21 for snapshots
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           java-version: "21"
           distribution: "temurin"
@@ -66,7 +66,7 @@ jobs:
         if: ( endsWith(steps.versioncheck.outputs.version, '-SNAPSHOT'))
 
       - name: Set up JDK 21 for releases
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           java-version: "21"
           distribution: "temurin"
@@ -76,6 +76,11 @@ jobs:
           server-password: MAVEN_PASSWORD
         if: ${{!( endsWith(steps.versioncheck.outputs.version, '-SNAPSHOT')) }}
 
+      - name: Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.19.0
+
       - name: Deploy with Maven
         run: mvn --batch-mode deploy -DskipTests
         env:
@@ -83,37 +88,35 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.BUILD_PASSWORD }}
 
       - name: Upload the produced artefacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: invitebuilds
           path: |
-            client/build/
+            client/dist/
             provisioning-mock/target/*.jar
             server/target/*.jar
-            welcome/build/
+            welcome/dist/
           retention-days: 1
 
       - name: Build Changelog
         id: changelog
-        uses: ardalanamini/auto-changelog@v4
+        uses: ardalanamini/auto-changelog@v5
         with:
           default-commit-type: New Features
           github-token: ${{ github.token }}
         if: github.event_name != 'workflow_dispatch'
 
       - name: Create release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v3
         id: create_release
         with:
-          draft: false
-          prerelease: true
-          release_name: Release ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           tag_name: ${{ github.ref_name }}
-          github-token: ${{ github.token }}
           body: |
             ${{ steps.changelog.outputs.changelog }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+          draft: false
+          prerelease: true
+          token: ${{ github.token }}
         if: github.event_name != 'workflow_dispatch'
 
   dockerbuild:
@@ -131,23 +134,23 @@ jobs:
             architecture: "linux/amd64,linux/arm64"
           - image: ghcr.io/openconext/openconext-invite/inviteprovisioningmock
             app: provisioning-mock
-            architecture: "linux/amd64,linux/arm64v8"
+            architecture: "linux/amd64,linux/arm64"
           - image: ghcr.io/openconext/openconext-invite/inviteserver
             app: server
-            architecture: "linux/amd64,linux/arm64v8"
+            architecture: "linux/amd64,linux/arm64"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download the previous produced artefacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: invitebuilds
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -155,7 +158,7 @@ jobs:
 
       - name: Set docker labels and tags
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ matrix.image }}
           flavor: |
@@ -168,12 +171,11 @@ jobs:
             type=sha
 
       - name: Build and push the ${{ matrix.app }} image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.app }}
           file: ${{ matrix.app }}/docker/Dockerfile
-          platforms: linux/amd64
-#          platforms: "${{ matrix.architecture }}"
+          platforms: "${{ matrix.architecture }}"
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -1,9 +1,10 @@
-@import "../styles/mixins";
+@use "../styles/mixins";
+@use "../styles/vars";
 
 .mod-role-form {
     .role-form {
-        @include page;
-        @include form;
+        @include mixins.page;
+        @include mixins.form;
 
         .section-separator {
             grid-column-start: first;
@@ -14,19 +15,23 @@
             grid-column-start: first;
         }
 
+        section.copy-to-clipboard {
+            display: flex;
+        }
+
         .application-container {
             grid-column: 1/-1;
             display: flex;
             position: relative;
 
-            @media (max-width: $medium) {
+            @media (max-width: vars.$medium) {
                 flex-direction: column;
             }
 
             .select-field {
                 width: 100%;
 
-                @media (max-width: $medium) {
+                @media (max-width: vars.$medium) {
                     width: 100%;
                 }
 
@@ -47,7 +52,7 @@
                     margin-top: -2px;
                 }
 
-                @media (max-width: $medium) {
+                @media (max-width: vars.$medium) {
                     width: 100%;
                     margin-left: 0;
                 }
@@ -58,11 +63,12 @@
                 right: 0;
                 top: 60px;
 
-                @media (max-width: $medium) {
+                @media (max-width: vars.$medium) {
                     position: initial;
                     margin-left: 0;
                 }
             }
+
         }
 
         .application-actions {
@@ -74,9 +80,14 @@
             }
         }
 
-        p.info {
+        em.info {
             grid-column-start: first;
-            margin-top: 4px;
+            margin-top: 6px;
+        }
+
+        p.warning {
+            margin-top: 14px;
+            color: var(--sds--color--orange--500);
         }
 
         div.role-auditable {
@@ -95,6 +106,41 @@
             grid-column-start: first;
             font-weight: 600;
             margin-top: 32px;
+        }
+
+        .role-expiry-date-container {
+            grid-column-start: first;
+            display: flex;
+            flex-direction: column;
+            border-bottom: 1px solid var(--sds--color--gray--200);
+            padding-bottom: 15px;
+
+            p.label {
+                font-weight: 600;
+                margin: 12px var(--sds--space--1) 0 0;
+            }
+
+            .role-expiry-date {
+                display: flex;
+                gap: 15px;
+                align-items: center;
+                .input-select-inner {
+                    width: 150px;
+
+                    .select-inner__control {
+                        height: 48px;
+                    }
+                }
+
+                .date-field {
+                    margin-top: 0;
+                }
+            }
+
+            div.input-field.inner-switch {
+                padding-bottom: 0;
+                border-bottom: none;
+            }
         }
 
     }

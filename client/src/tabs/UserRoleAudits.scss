@@ -1,0 +1,36 @@
+.mod-user-role-audits {
+
+    table.userRoleAudit {
+
+        thead {
+            th {
+                &.userEmail {
+                    width: 30%;
+                }
+
+                &.roleName {
+                    width: 30%;
+                }
+
+                &.action {
+                    width: 10%;
+                }
+
+                &.authority {
+                    width: 10%;
+                }
+
+                &.createdAt {
+                    width: 10%;
+                }
+
+                &.endDate {
+                    width: 10%;
+                }
+
+            }
+        }
+
+    }
+
+}

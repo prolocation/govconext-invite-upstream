@@ -18,9 +18,9 @@ const en = {
         adminFunction: "admin function",
         info: [
             //Arrays of titles and info blocks and if a function is an admin function
-            ["Invites", "<p>SURF invites institution managers who can create roles for their applications.</p>" +
+            ["Invites", "<p>SURF invites institution admins who can create roles for their applications.</p>" +
             "<p>The application list consists of applications connected to SURFconext.</p>", true],
-            ["Roles", "<p>The application managers will invite colleagues for roles who can in turn invite users.</p>", true],
+            ["Roles", "<p>The role managers will invite colleagues for roles who can in turn invite users.</p>", true],
             ["Join", "<p>Invited colleagues who accept the invitation are granted access rights for the applications.</p><br/>", false],
             ["Groups", "<p>The roles are actually group memberships that can be used in SURFconext authorisation rules, or provisioned as attributes or to external SCIM APIs.</p>", false]
         ],
@@ -38,7 +38,10 @@ const en = {
             access: "Invite",
             help: "Help",
             profile: "Profile",
-            logout: "Log out"
+            tokens: "Tokens",
+            logout: "Log out",
+            audit: "Role history",
+            colleagues: "Institution roles"
         },
     },
     tabs: {
@@ -62,7 +65,8 @@ const en = {
         allPendingInvitations: "Pending invitations",
         acceptedInvitations: "Accepted",
         performanceSeed: "Seed",
-        seed: "Seed"
+        seed: "Seed",
+        login: "Login"
     },
     home: {
         access: "SURFconext Invite",
@@ -77,9 +81,10 @@ const en = {
         },
     },
     access: {
-        SUPER_USER: "Super User",
+        SUPER_USER: "Superuser",
         INSTITUTION_ADMIN: "Institution admin",
-        MANAGER: "Manager",
+        APPLICATION_MANAGER: "Application manager",
+        MANAGER: "Role manager",
         INVITER: "Inviter",
         GUEST: "User",
         "No member": "No member"
@@ -91,11 +96,13 @@ const en = {
         name_email: "Name / email",
         name: "Name",
         email: "Email",
-        highestAuthority: "Role",
+        highestAuthority: "Function",
         createdAt: "Created",
         schacHomeOrganization: "Institution",
         lastActivity: "Last activity",
         organizationGUID: "Organization GUID",
+        crmOrganisation: "CRM Organisation",
+        crmContactId: "CRM Contact ID",
         eduPersonPrincipalName: "EPPN",
         sub: "Sub",
         singleUser: "user",
@@ -107,7 +114,10 @@ const en = {
         applications: "Applications",
         noRolesInfo: "You have no roles (which means you must be super-user)",
         noRolesInstitutionAdmin: "You are an institution admin and you have no roles (but you might have access to applications)",
+        noRolesInstitutionAdminOther: "{{name}} is an institution admin and has no roles (but might have access to applications)",
         noRolesNoApplicationsInstitutionAdmin: "You are an institution admin, but you have no roles and apparently your institution has also no access to applications",
+        noRolesInfoApplicationManager: "You have no roles, but are an application manager and has access to applications",
+        noRolesInfoApplicationManagerOther: "{{name}} has no roles, but is an application manager and has access to applications",
         guestRoleOnly: "You are not an administrator. Are you looking for <a href='{{welcomeUrl}}'>the apps you can access</a>?",
         rolesInfo: "You have the following roles",
         applicationsInfo: "You have access to the following applications",
@@ -123,14 +133,23 @@ const en = {
         authority: "Authority",
         endDate: "End date",
         expiryDays: "Expiry days",
-        roleExpiryTooltip: "Sort on roles to see which roles will expire the soonest"
+        roleExpiryTooltip: "Sort on roles to see which roles will expire the soonest",
+        deleteFlash: "User {{name}} has been deleted",
+        deleteConfirmation: "Are you absolutely sure you want to delete user {{name}}? There is no undo button.",
+        institutionAdmins: "Your fellow Institution administrators are:",
+        onlyInstitutionAdmins: "You are the only Institution admin within your organisation",
+        removeInstitutionAdminConfirmation: "Are you sure you want to remove the institution admin rights from {{userName}}",
+        removeInstitutionAdminFlash: "Institution rights are removed from {{userName}}"
     },
     role: {
         copyUrn: "Copy urn",
-        userInfo: "{{nbr}} member(s) & valid for {{valid}} days",
+        userInfo: "{{nbr}} member(s) & invalid {{period}}",
         roleInfo: "Role valid for <strong>{{days}} days</strong>",
         roleInfoNoEndDate: "Role has <strong>no end date</strong>",
-        contactAdmin: "Contact manager(s)"
+        contactAdmin: "Contact role manager(s)",
+        institutionAdmin: "Institution admins: {{names}}",
+        noInstitutionAdmin: "There are no institution admins for this role",
+        crmRoleImmutable: "CRM roles are read-only"
     },
     roles: {
         title: "Access Roles",
@@ -147,7 +166,9 @@ const en = {
         namePlaceHolder: "The name of the role",
         shortName: "Short name",
         organizationGUID: "Organization GUID",
-        identityProvider: "Identity provider: {{name}}",
+        organizationGUIDValue: "Institution GUID: {{guid}}",
+        identityProvider: "Identity provider",
+        identityProviderPlaceholder: "Search for identity provider...",
         landingPage: "(Custom) landing page",
         userRoleCount: "# Users",
         landingPagePlaceHolder: "https://landingpage.com",
@@ -158,6 +179,7 @@ const en = {
         yourRole: "Your role",
         description: "Description",
         descriptionPlaceHolder: "The description of the role",
+        isCrm: "mijnSURF role",
         noResults: "No roles are found",
         noMember: "No member",
         searchPlaceHolder: "Search for roles...",
@@ -185,7 +207,9 @@ const en = {
             info: "The following users will lose their access:",
             userInfo: "{{name}} ({{authority}}), last activity {{lastActivity}}",
             andMore: "And {{nbr}} more.. Check the list of current users for more details."
-        }
+        },
+        noProvisioning: "Users added to this role, won't have immediate access to this application. See the <a href=' https://servicedesk.surf.nl/wiki/spaces/IAM/pages/128910179/Applicatie+aansluiten+op+SURFconext+Invite' target='_blank'>wiki</a> for more information",
+        userRolesPresent: "You are not allowed to delete this role, as {{nbr}} user(s) have this role. You must first delete them from this role."
     },
     applications: {
         title: "Access Roles for this application ({{nbr}})",
@@ -230,16 +254,22 @@ const en = {
     invitations: {
         title: "Invitations",
         searchPlaceHolder: "Search for invitation...",
-        noResults: "No invitation where found",
+        noResults: "No invitations where found",
         inviter: "Invited by",
         status: "Status",
         pending: "pending",
         open: "Open",
         accepted: "Accepted",
         expired: "Expired",
+        mine: "Mine open invitations",
         enforceEmailEquality: "Email equality",
         eduIDOnly: "eduID only",
-        new: "Invite manager or inviter",
+        requestedAuthnContext: "ACR value",
+        requestedAuthnContextPlaceHolder: "Choose a ACR value for user stepup...",
+        requestedAuthnContextWarning: "To enforce the selected ACR also on the application(s) {{applications}}, " +
+            "additional configuration is needed on the eduID Identity Provider. " +
+            "Please contact <a href=\"mailto:support@surfconext.nl\">support@surfconext.nl</a> to request this change.",
+        new: "Invite role manager or inviter",
         newInvitation: "Invite inviter",
         newInvite: "New invite",
         newGuest: "Invite new user",
@@ -248,16 +278,27 @@ const en = {
         inviteesPlaceholder: "Invitee email addresses",
         requiredEmail: "At least one email address is required",
         requiredRole: "At least one role is required for an invitation",
+        requiredApplication: "At least one application is required for an application manager invitation",
         requiredOrganizationGUID: "A valid Organization GUID is required for an institution admin invitation",
         intendedAuthority: "Authority",
         roles: "Roles",
         inviterRoles: "Select the roles for the new invitation",
         rolesPlaceHolder: "Choose one or more roles",
+        rolesPlaceHolderLoading: "Wait until all roles are loaded...",
+        applications: "Applications",
+        applicationsPlaceHolder: "Choose one or applications roles",
+        applicationsPlaceHolderLoading: "Wait until all applications are loaded...",
         expiryDate: "Valid till",
         acceptedAt: "Date accepted",
         roleExpiryDate: "Role expiry date",
-        roleExpiryDateQuestion: "Set a custom role expiration period",
+        roleExpiryDateQuestion: "Set a custom role expiration",
         roleExpiryDateInfo: "This role will be removed from the user {{expiry}}",
+        roleExpiryDateInfoOn: "This role will be removed from the user on {{date}}",
+        roleExpiryDateInfoDefault: "By default this role will be removed from a user after {{days}} days",
+        removeRole: "Remove role",
+        after: "After",
+        on: "On",
+        days: "Days",
         customInviterDisplayNameQuestion: "Set a custom inviter name",
         inviterDisplayName: "Custom inviter display name for invitations",
         inviterDisplayNamePlaceholder: "e.g. working@home.university.nl",
@@ -272,6 +313,7 @@ const en = {
         messagePlaceholder: "Add an optional personal note to your invitation",
         invite: "Send invite",
         guestRoleIncluded: "Add the user role?",
+        notifyInviter: "Notify me when accepted?",
         invalidEmails: "Invalid email addresses removed: {{emails}}.",
         createFlash: "Invitation was sent",
         delete: "Revoke",
@@ -306,7 +348,9 @@ const en = {
         no: "No",
         ok: "OK",
         or: "or ",
+        fixed: "or set a fixed date",
         edit: "Edit",
+        reset: "Reset",
         cancel: "Cancel",
         save: "Save",
         specificDate: "Set specific date",
@@ -363,7 +407,8 @@ const en = {
         login: "Log in",
         loginWithSub: "Log in",
         emailMismatch: "The inviter has indicated that you must accept this invitation with email address {{email}}, " +
-            "but you have logged in with an account with a different email address. Please log in in with a different account."
+            "but you have logged in with an account with a different email address. Please log in in with a different account.",
+        crmOrganisationMismatch: "You already have a membership of a different CRM organisation. Close the browser and accept the invitation with a different account.<br/><br/> Message from the server: {{message}}"
     },
     inviter: {
         welcome: "Welcome, {{name}}",
@@ -375,7 +420,7 @@ const en = {
         history: "Invitation history"
     },
     institutionAdmin: {
-        welcome: "Welcome institution administrator of {{name}}! You can start with creating your first role and subsequently invite managers.",
+        welcome: "Welcome institution administrator of {{name}}! You can start with creating your first role and subsequently invite role managers.",
         create: "Create access role"
     },
     tokens: {
@@ -400,6 +445,8 @@ const en = {
         createFlash: "API token has been created",
         submit: "Submit",
         required: "The description is required for an API token",
+        userTokens: "Your personal API tokens",
+        owner: "Owner"
     },
     tooltips: {
         userIcon: "User {{name}} provisioned at {{createdAt}} with last activity on {{lastActivity}}",
@@ -409,11 +456,14 @@ const en = {
         invitationIcon: "Invitation for {{email}} sent at {{createdAt}} with expiration date {{expiryDate}}",
         roleShortName: "The unique short name of the role within a provisioning. It is used to format the urn and therefore not all characters are allowed.",
         organizationGUID: "The Manage organizational identifier to scope the visibility of roles of the institution admin. Only specify a value if you are creating or editing this role on behalf of an institution admin",
+        roleIdentityProvider: "The IdP to scope the visibility of roles of the institution admin.",
+        invitationIdentityProvider: "The IdP determines the organization GUID of the new Institution Admin when the invitation is accepted",
         roleUrn: "The urn of the role. It is based on the sanitized name and the role identifier. It is used as the unique global identifier of this role and therefore not all characters are allowed.",
         manageService: "The required application from SURFconext, with may have an optional provisioning",
         defaultExpiryDays: "The default number of days the role will expire, from the moment a user has accepted the invitation for this role",
         enforceEmailEqualityTooltip: "When checked the invitee must accept the invitation with an account with the email address where the invitation was sent to",
         eduIDOnlyTooltip: "When checked the invitees will be required to log in with eduID",
+        requestedAuthnContextTooltip: "The user will be forced to step up the authentication when logging in with eduID with the specified ACR",
         roleExpiryDateTooltip: "The end date of this role. After this date the role is removed from the user.",
         expiryDateTooltip: "The date on which this invitation expires",
         inviterDisplayName: "The functional address which will used in the invitations of the role.<br><br>Default the name of the inviter is show.",
@@ -429,7 +479,9 @@ const en = {
         removeUserRole: "Remove all selected user roles",
         removeOneUserRole: "Remove this user role",
         guestRoleIncludedTooltip: "Do you also want to grant the invitees the user role when they accept the invitation?",
+        notifyInviterTooltip: "Do you want to receive an email when the invitation is accepted?",
         expiredUserRole: "This role will expire soon",
+        applicationsTooltip: "The invited users will become Application Manager after they have accepted",
     },
     confirmationDialog: {
         title: "Confirm",
@@ -439,6 +491,7 @@ const en = {
         confirm: "Confirm",
         ok: "OK",
         cancel: "Cancel",
+        notAllowed: "Not allowed"
     },
     footer: {
         terms: "Terms of Use",
@@ -522,6 +575,35 @@ const en = {
         title: "Roles to be expired the next month",
         searchPlaceHolder: "Zoek...",
         noResults: "Yeah, no user-roles to be expired within one month"
+    },
+    requestedAuthnContext: {
+        EduIDLinkedInstitution: "EduID linked institution",
+        EduIDValidatedName: "EduID validated name",
+        ValidateNamesExternal: "EduID validated name by an external (non institutional) source",
+        EduIDRequireStudentAffiliation: "EduID required student affiliation",
+        TransparentAuthnContext: "Application provides ACR value"
+    },
+    userRoleAudit: {
+        header: "Audittrail",
+        info: "All mutations to roles created by your organisation",
+        email: "User",
+        roleName: "Role",
+        action: "Action",
+        actions: {
+            ADD: "Added",
+            DELETE: "Deleted",
+            UPDATE: "Updated"
+        },
+        authority: "Authority",
+        endDate: "End date",
+        createdAt: "Created",
+        searchPlaceHolder: "Search for role history",
+        title: "The audittrail of Roles",
+        rolePlaceHolder: "Filter by role",
+    },
+    institutionAdmins: {
+        title: "Institution administrators and application managers",
+        searchPlaceHolder: "Search..."
     }
 }
 

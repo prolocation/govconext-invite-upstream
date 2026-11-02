@@ -1,0 +1,725 @@
+import React, {useEffect, useMemo, useRef, useState} from "react";
+import {useLocation, useNavigate, useParams} from "react-router";
+import {useAppStore} from "../stores/AppStore";
+import I18n from "../locale/I18n";
+import {AUTHORITIES, isUserAllowed, urnFromRole} from "../utils/UserRole";
+import Select from "react-select";
+import {
+    allIdentityProviders,
+    allProviders,
+    consequencesRoleDeletion,
+    createRole,
+    deleteRole,
+    eduidIdentityProvider,
+    hasProvisionings,
+    me,
+    requestedAuthnContextValues,
+    roleByID,
+    updateRole,
+    validate
+} from "../api";
+import {Button, ButtonType, Loader} from "@surfnet/sds";
+import "./RoleForm.scss";
+import {UnitHeader} from "../components/UnitHeader";
+import RoleIcon from "@surfnet/sds/icons/illustrative-icons/hierarchy.svg";
+import InputField from "../components/InputField";
+import {constructShortName} from "../validations/regExps";
+import {distinctValues, isEmpty, splitListSemantically} from "../utils/Utils";
+import ErrorIndicator from "../components/ErrorIndicator";
+import SelectField from "../components/SelectField";
+import {providersToOptions} from "../utils/Manage";
+import ConfirmationDialog from "../components/ConfirmationDialog";
+import SwitchField from "../components/SwitchField";
+import {dateFromEpoch, displayExpiryDate, futureDate, longDateFormat} from "../utils/Date";
+import DOMPurify from "dompurify";
+import WarningIndicator from "../components/WarningIndicator";
+import {DateField} from "../components/DateField";
+import {ExpandableSwitchField} from "../components/ExpandableSwitchField";
+
+const DEFAULT_EXPIRY_DAYS = 365;
+const CUT_OFF_DELETED_USER = 5;
+
+// eslint-disable-next-line no-control-regex
+const CONTROL_CHARS = /[\u0000-\u001F\u007F]/g;
+
+const removeByOptions = ["after", "on"].map(val => ({value: val, label: I18n.t(`invitations.${val}`)}))
+
+export const RoleForm = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const {id} = useParams();
+    const nameRef = useRef();
+
+    const required = ["name", "description"];
+    const {user, setFlash, config} = useAppStore(state => state);
+
+    const [role, setRole] = useState({
+        name: "",
+        shortName: "",
+        defaultExpiryDays: DEFAULT_EXPIRY_DAYS,
+        organizationGUID: user.organizationGUID
+    });
+    const [providers, setProviders] = useState([]);
+    const [identityProviders, setIdentityProviders] = useState([]);
+    const [isNewRole, setNewRole] = useState(true);
+    const [loading, setLoading] = useState(true);
+    const [initial, setInitial] = useState(true);
+    const [alreadyExists, setAlreadyExists] = useState({});
+    const [confirmation, setConfirmation] = useState({});
+    const [confirmationOpen, setConfirmationOpen] = useState(false);
+    const [organizationGUIDIdentityProvider, setOrganizationGUIDIdentityProvider] = useState({});
+    const [customRoleExpiryDate, setCustomRoleExpiryDate] = useState(false);
+    const [customInviterDisplayName, setCustomInviterDisplayName] = useState(false);
+    const [applications, setApplications] = useState([]);
+    const [provisionings, setProvisionings] = useState({});
+    const [deletedUserRoles, setDeletedUserRoles] = useState([]);
+    const [removeRoleBy, setRemoveRoleBy] = useState(removeByOptions[0]);
+    const [requestedAuthnContextOptions, setRequestedAuthnContextOptions] = useState([]);
+    const [allowedToEditApplication, setAllowedToEditApplication] = useState(isUserAllowed(AUTHORITIES.APPLICATION_MANAGER, user));
+    const [eduIDIdP, setEduIDIdP] = useState(null);
+    const [acrValues, setACRValues] = useState({});
+
+    useEffect(() => {
+            const newRole = id === "new";
+            //Managers may edit - certain attributes - of roles, but are not allowed to create new ones
+            if (!isUserAllowed(AUTHORITIES.MANAGER, user) || (newRole && !isUserAllowed(AUTHORITIES.APPLICATION_MANAGER, user))) {
+                navigate("/404");
+                return;
+            }
+            const promises = [];
+            if (!newRole) {
+                promises.push(roleByID(parseInt(id, 10)));
+            }
+            if (user.superUser) {
+                promises.push(allProviders());
+            }
+            Promise.all(promises).then(res => {
+                if (!newRole) {
+                    if (!isEmpty(res[0].defaultExpiryDate) && res[0].defaultExpiryDate !== 0) {
+                        res[0].defaultExpiryDate = new Date(res[0].defaultExpiryDate * 1000);
+                        setCustomRoleExpiryDate(true);
+                        setRemoveRoleBy(removeByOptions[1]);
+                    } else if (res[0].defaultExpiryDays !== 0 && res[0].defaultExpiryDays !== DEFAULT_EXPIRY_DAYS) {
+                        setCustomRoleExpiryDate(true);
+                        setRemoveRoleBy(removeByOptions[0]);
+                    }
+                    setCustomInviterDisplayName(!isEmpty(res[0].inviterDisplayName));
+                    setRole(res[0]);
+                    setAllowedToEditApplication(allowedToEditApplication && isEmpty(res[0].crmRoleId));
+                }
+                let newProviders;
+                if (user.superUser) {
+                    newProviders = providersToOptions(res[newRole ? 0 : 1], I18n.locale);
+                } else if (user.institutionAdmin) {
+                    newProviders = providersToOptions(distinctValues(user.applications.concat(
+                        user.userRoles.map(userRole => userRole.role.applicationMaps).flat()
+                    ), "id"), I18n.locale);
+                } else if (!isEmpty(user.userApplications)) {
+                    const applicationMaps = user.userApplications.map(userApplication => userApplication.applicationMap);
+                    newProviders = providersToOptions(distinctValues(applicationMaps.concat(
+                        user.userRoles.map(userRole => userRole.role.applicationMaps).flat()
+                    ), "id"), I18n.locale);
+                } else {
+                    newProviders = providersToOptions(distinctValues(user.userRoles
+                        .map(userRole => userRole.role.applicationMaps).flat(), "id"), I18n.locale);
+                }
+                setProviders(newProviders);
+                setNewRole(newRole);
+                const name = newRole ? "" : res[0].name;
+                const breadcrumbPath = [
+                    {path: "/home", value: I18n.t("tabs.home")},
+                    {path: "/home/roles", value: I18n.t("tabs.roles")},
+                ];
+                if (newRole) {
+                    setApplications([null]);
+                    if (location.state) {
+                        const preSelectedProviders = newProviders.filter(provider => provider.value === location.state);
+                        setApplications(preSelectedProviders);
+                    } else {
+                        setApplications([null]);
+                    }
+                } else {
+                    breadcrumbPath.push({path: `/roles/${res[0].id}`, value: name});
+                    res[0].applicationMaps.forEach(m => m.landingPage = (res[0].applicationUsages.find(appUsage => appUsage.application.manageId === m.id) || {}).landingPage);
+                    setApplications(providersToOptions(res[0].applicationMaps, I18n.locale));
+                }
+                breadcrumbPath.push({value: I18n.t(`roles.${newRole ? "new" : "edit"}`, {name: name})});
+                useAppStore.setState({breadcrumbPath: breadcrumbPath});
+                setLoading(false);
+                //Now fetch all IdentityProviders for the superuser
+                if (user.superUser) {
+                    allIdentityProviders().then(idps => {
+                        const identityProviderOptions = idps
+                            .filter(idp => !isEmpty(idp.institutionGuid))
+                            .map(idp => ({
+                                value: idp.id,
+                                label: idp["name:en"],
+                                institutionGuid: idp.institutionGuid
+                            }))
+                        setIdentityProviders(identityProviderOptions);
+                        if (!newRole) {
+                            const provider = identityProviderOptions.find(idp => idp.institutionGuid === res[0].organizationGUID);
+                            setOrganizationGUIDIdentityProvider(provider || {});
+                        }
+                    });
+                }
+                Promise.all([eduidIdentityProvider(), requestedAuthnContextValues()])
+                    .then(res => {
+                        setEduIDIdP(res[0]);
+                        setACRValues(res[1]);
+                        const acrContexts = Object.entries(res[1])
+                            .map(arr => ({value: arr[1], label: I18n.t(`requestedAuthnContext.${arr[0]}`)}));
+                        setRequestedAuthnContextOptions(acrContexts);
+                    });
+                setTimeout(() => {
+                    if (nameRef && nameRef.current) {
+                        nameRef.current.focus();
+                    }
+                }, 500);
+            })
+        },
+        [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const acrWarning = useMemo(() => {
+            if (isEmpty(role.requestedAuthnContext) || isEmpty(eduIDIdP) || isEmpty(applications)) {
+                return null;
+            }
+            //Filter out the applications that are not present in the mfaEntities of the eduIDIdp
+            //or where the MFA level does not equal the requestedAuthnContext. If the requestedAuthnContext === TransparentAuthnContext,
+            //then we skip the warning
+            const mfaEntities = eduIDIdP.mfaEntities;
+            const acrValue = role.requestedAuthnContext;
+            const applicationsMissingMfa = applications
+                .filter(application => !isEmpty(application))
+                .filter(application => {
+                const mfa = mfaEntities.find(mfa => mfa.name === application.entityid);
+                return isEmpty(mfa) || (mfa.level !== acrValue && mfa.level !== acrValues.TransparentAuthnContext);
+            });
+            if (isEmpty(applicationsMissingMfa)) {
+                return null;
+            }
+            const applicationNames = splitListSemantically(applicationsMissingMfa.map(app => app.label), I18n.t("forms.and"));
+            return DOMPurify.sanitize(I18n.t("invitations.requestedAuthnContextWarning",
+                {applications: applicationNames}));
+
+        },
+        [role.requestedAuthnContext, eduIDIdP, applications, acrValues])
+
+    const validateApplication = (index, value) => {
+        if (!isEmpty(value)) {
+            validate("url", value)
+                .then(json => {
+                    const application = applications[index];
+                    application.invalid = !json.valid;
+                    setApplications([...applications])
+                });
+        }
+        return true;
+    }
+
+    const submit = () => {
+        setInitial(false);
+        if (isValid()) {
+            setLoading(true);
+            const promise = isNewRole ? createRole : updateRole;
+            const newRoleData = {
+                ...role,
+                name: (role.name || "").replace(CONTROL_CHARS, " ").trim(),
+                description: (role.description || "").replace(CONTROL_CHARS, " ").trim(),
+                applicationUsages: applications
+                    .filter(app => !isEmpty(app))
+                    .map(app => ({application: app, landingPage: app.landingPage}))
+            };
+            promise(newRoleData)
+                .then(res => {
+                    const flashMessage = I18n.t(`roles.${isNewRole ? "createFlash" : "updateFlash"}`, {name: role.name});
+                    updateUserIfNecessary(`/roles/${res.id}`, flashMessage);
+                }).catch(handleError);
+        }
+    }
+
+    const handleError = e => {
+        setLoading(false);
+        e.response.json().then(j => {
+            const reference = j.reference || 999;
+            setConfirmation({
+                cancel: null,
+                action: () => setConfirmationOpen(false),
+                warning: false,
+                error: true,
+                question: I18n.t("forms.error", {reference: reference}),
+                confirmationTxt: I18n.t("forms.ok"),
+                confirmationHeader: I18n.t("confirmationDialog.error")
+            });
+            setDeletedUserRoles([]);
+            setConfirmationOpen(true);
+        })
+    }
+
+    const toggleRemoveBy = option => {
+        setRemoveRoleBy(option);
+        if (option.value === "after") {
+            setRole({...role, defaultExpiryDays: DEFAULT_EXPIRY_DAYS, defaultExpiryDate: null});
+        } else {
+            setRole({...role, defaultExpiryDays: 0, defaultExpiryDate: futureDate(365, new Date())});
+        }
+    }
+
+    const updateUserIfNecessary = (path, flashMessage) => {
+        if (user.userRoles
+                .some(userRole => userRole.role.id === role.id)
+            || !isEmpty(user.userApplications)) {
+            //We need to refresh the roles of the User to ensure 100% consistency
+            me()
+                .then(res => {
+                    useAppStore.setState(() => ({user: res, authenticated: true}));
+                    navigate(path);
+                    setFlash(flashMessage);
+                });
+        } else {
+            navigate(path);
+            setFlash(flashMessage);
+        }
+    }
+
+    const doDeleteAction = allowedToDelete => {
+        if (allowedToDelete) {
+            doDelete(false);
+        } else {
+            setConfirmationOpen(false);
+        }
+    }
+
+    const doDelete = showConfirmation => {
+        if (showConfirmation) {
+            setLoading(true);
+            consequencesRoleDeletion(role.id).then(res => {
+                setLoading(false);
+                setDeletedUserRoles(res);
+                const allowedToDelete = user.superUser || res.length === 0;
+                const question = allowedToDelete ? I18n.t("roles.deleteConfirmation") :
+                    I18n.t("roles.userRolesPresent", {nbr: res.length});
+                const confirmationTxt = allowedToDelete ? I18n.t("confirmationDialog.confirm") :
+                    I18n.t("confirmationDialog.ok");
+                const confirmationHeader = allowedToDelete ? I18n.t("confirmationDialog.title") :
+                    I18n.t("confirmationDialog.notAllowed");
+                setConfirmation({
+                    cancel: !allowedToDelete ? null : () => setConfirmationOpen(false),
+                    action: () => doDeleteAction(allowedToDelete),
+                    warning: true,
+                    error: false,
+                    question: question,
+                    confirmationTxt: confirmationTxt,
+                    confirmationHeader: confirmationHeader
+                });
+                setConfirmationOpen(true);
+            })
+        } else {
+            setLoading(true);
+            setDeletedUserRoles([]);
+            deleteRole(role)
+                .then(() => {
+                    setConfirmationOpen(false);
+                    updateUserIfNecessary("/home/roles", I18n.t("roles.deleteFlash", {name: role.name}));
+                }).catch(handleError)
+        }
+    };
+
+    const isValid = () => {
+        return required.every(attr => !isEmpty(role[attr]))
+            && Object.values(alreadyExists).every(attr => !attr)
+            && !isEmpty(applications)
+            && !isEmpty(role.organizationGUID)
+            && !isEmpty(applications[0])
+            && applications.every(app => !app || (!app.invalid && !isEmpty(app.landingPage)))
+            && (role.defaultExpiryDays > 0 || role.defaultExpiryDate !== null)
+            && (!isEmpty(role.inviterDisplayName) || !customInviterDisplayName);
+    }
+
+    const changeOrganizationGUIDIdentityProvider = option => {
+        setOrganizationGUIDIdentityProvider(option);
+        setRole({...role, organizationGUID: option.institutionGuid});
+    }
+
+    const changeApplication = (index, application) => {
+        applications.splice(index, 1, application);
+        setApplications([...applications]);
+        hasProvisionings(application.manageId)
+            .then(res => {
+                const newProvisionings = {
+                    ...provisionings,
+                    [application.manageId]: !res && !application.receivesMemberships
+                };
+                setProvisionings(newProvisionings);
+            })
+    }
+
+    const changeApplicationLandingPage = (index, e) => {
+        const application = applications[index];
+        const newApplication = {...application, landingPage: e.target.value, invalid: false};
+        applications.splice(index, 1, newApplication);
+        setApplications([...applications]);
+    }
+
+    const addApplication = () => {
+        applications.push(null);
+        setApplications([...applications]);
+    }
+
+    const deleteApplication = index => {
+        applications.splice(index, 1);
+        setApplications([...applications]);
+    }
+
+    const deriveExpiryDate = () => {
+        const expiryDate = isEmpty(role.defaultExpiryDate) ? futureDate(role.defaultExpiryDays, new Date()) : role.defaultExpiryDate;
+        return displayExpiryDate(expiryDate);
+    };
+
+    const customRoleExpiryDateInfo = () => {
+        let postfix = "Default"
+        if (customRoleExpiryDate) {
+            postfix = removeRoleBy.value === "on" ? "On" : ""
+        }
+        return I18n.t(`invitations.roleExpiryDateInfo${postfix}`, {
+            expiry: deriveExpiryDate(),
+            date: longDateFormat(role.defaultExpiryDate),
+            days: DEFAULT_EXPIRY_DAYS
+        })
+    }
+    const renderForm = () => {
+        const valid = isValid();
+        const disabledSubmit = (!valid && !initial);
+        const filteredProviders = providers.filter(option => !applications.some(app => app && option.value === app.value));
+        return (<>
+                <h2 className="section-separator">
+                    {I18n.t("roles.roleDetails")}
+                </h2>
+
+                {(!isNewRole && user.superUser) &&
+                    <div className="role-auditable">
+                        <p dangerouslySetInnerHTML={{
+                            __html: DOMPurify.sanitize(I18n.t("roles.auditable", {
+                                name: role.name,
+                                createdBy: role.auditable.createdBy,
+                                createdAt: dateFromEpoch(role.auditable.createdAt)
+                            }))
+                        }}/>
+                    </div>
+                }
+
+                <InputField name={I18n.t("roles.name")}
+                            value={role.name || ""}
+                            placeholder={I18n.t("roles.namePlaceHolder")}
+                            error={alreadyExists.name || (!initial && isEmpty(role.name))}
+                            onRef={nameRef}
+                            required={true}
+                            onChange={e => {
+                                const shortName = isNewRole ? constructShortName(e.target.value) : role.shortName;
+                                setRole(
+                                    {...role, name: e.target.value, shortName: shortName});
+                                setAlreadyExists({...alreadyExists, shortName: false})
+                            }}
+                />
+                {(!initial && isEmpty(role.name)) &&
+                    <ErrorIndicator msg={I18n.t("forms.required", {
+                        attribute: I18n.t("roles.name").toLowerCase()
+                    })}/>}
+
+                {!isNewRole &&
+                    <InputField
+                        name={I18n.t("roles.urn")}
+                        value={urnFromRole(config.groupUrnPrefix, role)}
+                        disabled={true}
+                        copyClipBoard={true}
+                        customClassName={"token-secret"}
+                        toolTip={I18n.t("tooltips.roleUrn")}
+                    />}
+
+                {user.superUser &&
+                    <SelectField name={I18n.t("roles.identityProvider")}
+                                 toolTip={I18n.t("tooltips.roleIdentityProvider")}
+                                 value={identityProviders.find(idp => idp.value === organizationGUIDIdentityProvider.value)}
+                                 placeholder={I18n.t("roles.identityProviderPlaceholder")}
+                                 options={identityProviders}
+                                 onChange={changeOrganizationGUIDIdentityProvider}
+                                 searchable={true}
+                                 required={true}
+                    />}
+                {(!initial && isEmpty(role.organizationGUID)) &&
+                    <ErrorIndicator msg={I18n.t("forms.required", {
+                        attribute: I18n.t("roles.organizationGUID").toLowerCase()
+                    })}/>}
+                {!isEmpty(organizationGUIDIdentityProvider.institutionGuid) &&
+                    <em className="info">{I18n.t("roles.organizationGUIDValue", {guid: organizationGUIDIdentityProvider.institutionGuid})}</em>}
+
+                <InputField name={I18n.t("roles.description")}
+                            value={role.description || ""}
+                            placeholder={I18n.t("roles.descriptionPlaceHolder")}
+                            error={!initial && isEmpty(role.description)}
+                            multiline={true}
+                            required={true}
+                            onChange={e => setRole(
+                                {...role, description: e.target.value})}
+                />
+                {(!initial && isEmpty(role.description)) &&
+                    <ErrorIndicator msg={I18n.t("forms.required", {
+                        attribute: I18n.t("roles.description").toLowerCase()
+                    })}/>}
+
+                <h2 className="section-separator">
+                    {I18n.t("roles.applicationDetails")}
+                </h2>
+                {applications.map((application, index) =>
+                    <div className="application-container" key={index}>
+                        <div className="select-field-container">
+                            <SelectField name={I18n.t("roles.manage")}
+                                         value={application}
+                                         placeholder={I18n.t("roles.applicationPlaceholder")}
+                                         options={filteredProviders}
+                                         onChange={option => changeApplication(index, option)}
+                                         searchable={true}
+                                         clearable={false}
+                                         required={index === 0}
+                                         disabled={!allowedToEditApplication}
+                            />
+                            {(!initial && isEmpty(application) && index === 0) &&
+                                <ErrorIndicator msg={I18n.t("forms.required", {
+                                    attribute: I18n.t("roles.manage").toLowerCase()
+                                })}/>}
+                            {provisionings[application?.manageId] &&
+                                <WarningIndicator msg={I18n.t("roles.noProvisioning")} decode={false}/>
+                            }
+                        </div>
+                        <div className="input-field-container">
+                            <InputField name={I18n.t("roles.landingPage")}
+                                        value={application ? application.landingPage : null}
+                                        isUrl={true}
+                                        required={true}
+                                        disabled={isEmpty(application) || !allowedToEditApplication}
+                                        placeholder={I18n.t("roles.landingPagePlaceHolder")}
+                                        onBlur={e => validateApplication(index, e.target.value)}
+                                        onChange={e => changeApplicationLandingPage(index, e)}
+                            />
+                            {(!initial && application?.landingPage && application.invalid) &&
+                                <ErrorIndicator msg={I18n.t("forms.invalid", {
+                                    attribute: I18n.t("roles.landingPage").toLowerCase(),
+                                    value: application?.landingPage
+                                })}/>}
+                            {(!initial && !isEmpty(application) && isEmpty(application.landingPage)) &&
+                                <ErrorIndicator msg={I18n.t("forms.required", {
+                                    attribute: I18n.t("roles.landingPage").toLowerCase()
+                                })}/>}
+                        </div>
+                        {(applications.length !== 1 && allowedToEditApplication) &&
+                            <Button type={ButtonType.Delete}
+                                    onClick={() => deleteApplication(index)}/>
+                        }
+                    </div>
+                )}
+                {(!initial && isEmpty(applications)) &&
+                    <ErrorIndicator msg={I18n.t("forms.required", {
+                        attribute: I18n.t("roles.manage").toLowerCase()
+                    })}/>}
+                {allowedToEditApplication &&
+                    <div className="application-actions">
+                        <Button txt={I18n.t("roles.addApplication")}
+                                disabled={applications.length !== 0 && (providers.length === applications.length || isEmpty(applications[0]))}
+                                onClick={addApplication}/>
+                    </div>
+                }
+
+                <h2 className="section-separator">
+                    {I18n.t("roles.invitationDetails")}
+                </h2>
+
+                <SwitchField name={"enforceEmailEquality"}
+                             value={role.enforceEmailEquality || false}
+                             onChange={val => setRole({...role, enforceEmailEquality: val})}
+                             label={I18n.t("invitations.enforceEmailEquality")}
+                             info={I18n.t("tooltips.enforceEmailEqualityTooltip")}
+                />
+
+                <SwitchField name={"eduIDOnly"}
+                             value={role.eduIDOnly || false}
+                             onChange={val => setRole({...role, eduIDOnly: val})}
+                             label={I18n.t("invitations.eduIDOnly")}
+                             info={I18n.t("tooltips.eduIDOnlyTooltip")}
+                />
+                {(role.eduIDOnly && !isEmpty(requestedAuthnContextOptions)) &&
+                    <SelectField
+                        value={requestedAuthnContextOptions.find(option => option.value === role.requestedAuthnContext)}
+                        options={requestedAuthnContextOptions}
+                        className={"requested-authn-context"}
+                        name={I18n.t("invitations.requestedAuthnContext")}
+                        toolTip={I18n.t("tooltips.requestedAuthnContextTooltip")}
+                        placeholder={I18n.t("invitations.requestedAuthnContextPlaceHolder")}
+                        clearable={true}
+                        onChange={option => setRole({
+                            ...role,
+                            requestedAuthnContext: option === null ? null : option.value
+                        })}
+                    >
+                        {acrWarning &&
+                            <p className="warning" dangerouslySetInnerHTML={{__html: acrWarning}}/>}
+
+                    </SelectField>}
+
+                <ExpandableSwitchField
+                    name={"roleExpiryDate"}
+                    label={I18n.t(`invitations.roleExpiryDateQuestion`)}
+                    info={customRoleExpiryDateInfo()}
+                    defaultValue={customRoleExpiryDate}
+                    onChange={val => {
+                        if (!val) {
+                            setRole({
+                                ...role,
+                                defaultExpiryDays: DEFAULT_EXPIRY_DAYS,
+                                defaultExpiryDate: null
+                            });
+                            setRemoveRoleBy(removeByOptions[0]);
+                        }
+                        setCustomRoleExpiryDate(val);
+                    }}
+                >
+                    <div className="role-expiry-date-container">
+                        <p className="label">{I18n.t("invitations.removeRole")}</p>
+                        <div className="role-expiry-date">
+                            <Select className="input-select-inner"
+                                    classNamePrefix={"select-inner"}
+                                    value={removeRoleBy}
+                                    options={removeByOptions}
+                                    onChange={toggleRemoveBy}
+                            />
+                            {removeRoleBy.value === "after" &&
+                                <>
+                                    <InputField value={role.defaultExpiryDays || DEFAULT_EXPIRY_DAYS}
+                                                isInteger={true}
+                                                onChange={e => {
+                                                    const val = parseInt(e.target.value);
+                                                    const defaultExpiryDays = Number.isInteger(val) && val > 0 ? val : 0;
+                                                    setRole(
+                                                        {...role, defaultExpiryDays: defaultExpiryDays})
+                                                }}
+                                                customClassName="inner-switch"/>
+                                    <span>{I18n.t("invitations.days")}</span>
+                                </>
+                            }
+                            {removeRoleBy.value === "on" &&
+                                <DateField value={role.defaultExpiryDate || futureDate(365, new Date())}
+                                           onChange={e => setRole({...role, defaultExpiryDate: e})}
+                                           showYearDropdown={true}
+                                           pastDatesAllowed={config.pastDateAllowed}
+                                           allowNull={false}
+                                           minDate={futureDate(1, new Date())}
+                                />
+                            }
+
+                        </div>
+                    </div>
+                </ExpandableSwitchField>
+
+                {(!initial && removeRoleBy.value === "after" && (isEmpty(role.defaultExpiryDays) || role.defaultExpiryDays < 1)) &&
+                    <ErrorIndicator msg={I18n.t("forms.required", {
+                        attribute: I18n.t("roles.defaultExpiryDays").toLowerCase()
+                    })}/>}
+
+                <SwitchField name={"customInviterDisplayName"}
+                             value={customInviterDisplayName}
+                             onChange={() => {
+                                 setCustomInviterDisplayName(!customInviterDisplayName);
+                                 setRole(
+                                     {...role, inviterDisplayName: null})
+                             }}
+                             last={customInviterDisplayName}
+                             label={I18n.t("invitations.customInviterDisplayNameQuestion")}
+                             info={I18n.t(`invitations.${customInviterDisplayName ? "customInviterDisplayNameInfo" : "customInviterDisplayNameInfoDefault"}`)}
+                />
+                {customInviterDisplayName && <InputField name={I18n.t("invitations.inviterDisplayName")}
+                                                         value={role.inviterDisplayName || ""}
+                                                         error={!initial && isEmpty(role.inviterDisplayName) && customInviterDisplayName}
+                                                         onChange={e => {
+                                                             setRole(
+                                                                 {...role, inviterDisplayName: e.target.value})
+                                                         }}
+                                                         placeholder={I18n.t("invitations.inviterDisplayNamePlaceholder")}
+                                                         toolTip={I18n.t("tooltips.inviterDisplayName")}
+                                                         customClassName="inner-switch"
+                />}
+                {(!initial && isEmpty(role.inviterDisplayName) && customInviterDisplayName) &&
+                    <ErrorIndicator msg={I18n.t("invitations.inviterDisplayNameError")}/>}
+
+                <SwitchField name={"notifyInviter"}
+                             value={role.notifyInviter || false}
+                             onChange={val => setRole({...role, notifyInviter: val})}
+                             label={I18n.t("invitations.notifyInviter")}
+                             info={I18n.t("tooltips.notifyInviterTooltip")}
+                />
+
+                <SwitchField name={"overrideSettingsAllowed"}
+                             value={role.overrideSettingsAllowed}
+                             onChange={value => setRole({...role, overrideSettingsAllowed: value})}
+                             label={I18n.t("roles.override")}
+                             info={I18n.t("tooltips.overrideSettingsAllowed")}
+                             last={true}
+                />
+
+                <section className="actions">
+                    {(!isNewRole && allowedToEditApplication) &&
+                        <Button type={ButtonType.Delete}
+                                onClick={() => doDelete(true)}/>}
+                    <Button type={ButtonType.Secondary}
+                            txt={I18n.t("forms.cancel")}
+                            onClick={() => navigate(isNewRole ? "/home/roles" : `/roles/${role.id}`)}/>
+                    <Button disabled={disabledSubmit}
+                            txt={I18n.t("forms.save")}
+                            onClick={submit}/>
+                </section>
+
+            </>
+        );
+    }
+
+    if (loading) {
+        return <Loader/>
+    }
+
+    return (
+        <div className={"mod-role-form"}>
+            {confirmationOpen && <ConfirmationDialog isOpen={confirmationOpen}
+                                                     cancel={confirmation.cancel}
+                                                     confirm={confirmation.action}
+                                                     confirmationTxt={confirmation.confirmationTxt}
+                                                     confirmationHeader={confirmation.confirmationHeader}
+                                                     isError={confirmation.error}
+                                                     question={confirmation.question}>
+                {(!isEmpty(deletedUserRoles) && user.superUser) &&
+                    <div className="consequences">
+                        <p>{I18n.t("roles.consequences.info")}</p>
+                        <ul>
+                            {deletedUserRoles.slice(0, CUT_OFF_DELETED_USER).map((userRole, index) => <li key={index}>
+                                {I18n.t("roles.consequences.userInfo", {
+                                    name: userRole.userInfo.name,
+                                    authority: I18n.t(`access.${userRole.authority}`),
+                                    lastActivity: dateFromEpoch(userRole.userInfo.lastActivity)
+                                })}
+                            </li>)}
+                        </ul>
+                        {deletedUserRoles.length > CUT_OFF_DELETED_USER &&
+                            <p>{I18n.t("roles.consequences.andMore", {nbr: deletedUserRoles.length - CUT_OFF_DELETED_USER})}</p>}
+                    </div>}
+            </ConfirmationDialog>}
+
+            <UnitHeader
+                obj={({
+                    name: I18n.t(`roles.${isNewRole ? "new" : "edit"}`, {name: role.name}),
+                    svg: RoleIcon,
+                    style: "small"
+                })}
+            />
+            <div className={"role-form"}>
+                {renderForm()}
+            </div>
+        </div>
+    );
+}

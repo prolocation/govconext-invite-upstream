@@ -1,13 +1,15 @@
 import React, {useEffect, useRef, useState} from "react";
 import I18n from "../locale/I18n";
-import {ReactComponent as SearchIcon} from "@surfnet/sds/icons/functional-icons/search.svg";
+import SearchIcon from "@surfnet/sds/icons/functional-icons/search.svg";
 import {isEmpty} from "../utils/Utils";
 import {sortObjects, valueForSort} from "../utils/Sort";
 import {headerIcon} from "../utils/Forms";
 import "./Entities.scss";
 import {Button, Loader, Pagination, Tooltip} from "@surfnet/sds";
-import {pageCount} from "../utils/Pagination";
-import {useNavigate} from "react-router-dom";
+import {pageCount, searchParameterFromQueryParams, storeSearchQueryParameter} from "../utils/Pagination";
+import {getStoredSearchQuery, storeSearchQuery} from "../utils/SearchQueryStorage";
+import {useSearchGroup} from "../utils/SearchGroupContext";
+import {useNavigate} from "react-router";
 
 export const Entities = ({
                              modelName,
@@ -41,11 +43,16 @@ export const Entities = ({
                              busy = false
                          }) => {
 
-    const [initial, setInitial] = useState(!isEmpty(customSearch));
-    const [query, setQuery] = useState("");
-    const [sorted, setSorted] = useState(defaultSort);
-    const [reverse, setReverse] = useState(false);
-    const [page, setPage] = useState(1);
+    //Tabs sharing a SearchGroupContext (e.g. all Home tabs, or all tabs of one Role) carry
+    //the search text over when switching between them; standalone pages fall back to a key
+    //scoped to this page and model, so unrelated pages never leak search text into each other.
+    const searchGroup = useSearchGroup();
+    const searchQueryKey = searchGroup ? `group:${searchGroup}` : `${window.location.pathname}:${modelName}`;
+
+    const [query, setQuery] = useState(() => getStoredSearchQuery(searchQueryKey));
+    const [sorted, setSorted] = useState(searchParameterFromQueryParams("sort", false, defaultSort));
+    const [reverse, setReverse] = useState("DESC" === searchParameterFromQueryParams("sortDirection", false, "ASC"));
+    const [page, setPage] = useState(searchParameterFromQueryParams("page", true, 1));
 
     const searchRef = useRef();
     const navigate = useNavigate();
@@ -55,6 +62,14 @@ export const Entities = ({
             searchRef.current.focus();
         }
     }, [displaySearch, inputFocus])
+
+    //Restore the results for a query that was persisted when the user last left this tab
+    useEffect(() => {
+        if (query) {
+            callCustomSearch(query, sorted, reverse, page);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const newEntity = () => {
         if (newEntityFunc) {
@@ -68,7 +83,8 @@ export const Entities = ({
         const newQuery = e.target.value;
         const currentQuery = query;
         setQuery(newQuery);
-        //When the user change the query text we reset the page number
+        storeSearchQuery(searchQueryKey, newQuery);
+        //When the user changes the query text we reset the page number
         const queryChanged = currentQuery !== newQuery;
         if (queryChanged) {
             setPage(1);
@@ -126,7 +142,9 @@ export const Entities = ({
     const setSortedKey = key => {
         const newReserve = (sorted === key ? !reverse : false);
         setSorted(key);
+        storeSearchQueryParameter("sort", key);
         setReverse(newReserve);
+        storeSearchQueryParameter("sortDirection", newReserve ? "ASC" : "DESC");
         callCustomSearch(query, key, newReserve, page);
     }
 
@@ -134,7 +152,6 @@ export const Entities = ({
         if (customSearch) {
             //Adjust page, as serverSide is zero-based
             customSearch(newQuery, newSorted, newReversed, newPage - 1);
-            setInitial(false);
         }
         if (searchCallback) {
             const searchResult = filterEntities(query);
@@ -144,10 +161,7 @@ export const Entities = ({
     }
 
     const getEntityValue = (entity, column) => {
-        if (column.mapper) {
-            return column.mapper(entity);
-        }
-        return entity[column.key];
+        return column.mapper ? column.mapper(entity): entity[column.key];
     }
 
     const onRowClick = (e, entity) => {
@@ -206,12 +220,13 @@ export const Entities = ({
                             </tbody>
                         </table>
                     </div>}
-                {(!hasEntities && !initial && !customEmptySearch && !loading && !hideTitle && !busy) &&
+                {(!hasEntities && !customEmptySearch && !loading && !hideTitle && !busy) &&
                     <p className="no-entities">{customNoEntities || I18n.t(`${modelName}.noEntities`)}</p>}
                 <Pagination currentPage={page}
                             onChange={nbr => {
                                 setPage(nbr);
                                 callCustomSearch(query, sorted, reverse, nbr);
+                                storeSearchQueryParameter("page", nbr);
                             }}
                             total={totalElements || total}
                             pageCount={pageCount}/>

@@ -1,0 +1,153 @@
+package invite.api;
+
+import invite.config.Config;
+import invite.cron.ResourceCleaner;
+import invite.cron.RoleExpirationNotifier;
+import invite.exception.NotAllowedException;
+import invite.manage.EntityType;
+import invite.manage.Manage;
+import invite.model.Application;
+import invite.model.ApplicationUsage;
+import invite.model.Role;
+import invite.model.User;
+import invite.model.UserRole;
+import invite.repository.ApplicationUsageRepository;
+import invite.repository.RoleRepository;
+import invite.repository.UserRoleRepository;
+import invite.security.UserPermissions;
+import invite.seed.PerformanceSeed;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.Serializable;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Map;
+
+import static invite.SwaggerOpenIdConfig.OPEN_ID_SCHEME_NAME;
+
+@RestController
+@RequestMapping(value = {"/api/v1/system", "/api/external/v1/system"}, produces = MediaType.APPLICATION_JSON_VALUE)
+@Transactional
+@SecurityRequirement(name = OPEN_ID_SCHEME_NAME, scopes = {"openid"})
+@EnableConfigurationProperties(Config.class)
+public class SystemController {
+
+    private static final Log LOG = LogFactory.getLog(SystemController.class);
+
+    private final ResourceCleaner resourceCleaner;
+    private final RoleExpirationNotifier roleExpirationNotifier;
+    private final RoleRepository roleRepository;
+    private final UserRoleRepository userRoleRepository;
+    private final Manage manage;
+    private final PerformanceSeed performanceSeed;
+    private final Config config;
+    private final ApplicationUsageRepository applicationUsageRepository;
+
+    public SystemController(ResourceCleaner resourceCleaner,
+                            RoleExpirationNotifier roleExpirationNotifier,
+                            RoleRepository roleRepository,
+                            UserRoleRepository userRoleRepository,
+                            Manage manage,
+                            PerformanceSeed performanceSeed,
+                            Config config,
+                            ApplicationUsageRepository applicationUsageRepository) {
+        this.resourceCleaner = resourceCleaner;
+        this.roleExpirationNotifier = roleExpirationNotifier;
+        this.roleRepository = roleRepository;
+        this.userRoleRepository = userRoleRepository;
+        this.manage = manage;
+        this.performanceSeed = performanceSeed;
+        this.config = config;
+        this.applicationUsageRepository = applicationUsageRepository;
+    }
+
+    @GetMapping("/cron/cleanup")
+    @Operation(summary = "Trigger cron resource cleanup", description = "Clean up expired invitations and tokens (super user only)")
+    public ResponseEntity<Map<String, Object>> cronCleanup(@Parameter(hidden = true) User user) {
+        LOG.debug(String.format("/cron/cleanup for user %s", user.getEduPersonPrincipalName()));
+        UserPermissions.assertSuperUser(user);
+        Map<String, Object> body = resourceCleaner.doClean();
+        return ResponseEntity.ok(body);
+    }
+
+    @GetMapping("/cron/expiry-notifications")
+    @Operation(summary = "Trigger cron role expiry notifications", description = "Send notifications for roles that are about to expire (super user only)")
+    public ResponseEntity<Map<String, List<String>>> expiryNotifications(@Parameter(hidden = true) User user) {
+        LOG.debug(String.format("/cron/expiry-notifications for user %s", user.getEduPersonPrincipalName()));
+        UserPermissions.assertSuperUser(user);
+        return ResponseEntity.ok(Map.of("mails", roleExpirationNotifier.doSweep()));
+    }
+
+    @GetMapping("/expiry-user-roles")
+    @Operation(summary = "Get expiring user roles", description = "Retrieve user roles that will expire within the next 30 days (super user only)")
+    public ResponseEntity<List<UserRole>> expiryUserRoles(@Parameter(hidden = true) User user) {
+        LOG.debug(String.format("/expiry-user-roles for user %s", user.getEduPersonPrincipalName()));
+        UserPermissions.assertSuperUser(user);
+        Instant instant = Instant.now().plus(30, ChronoUnit.DAYS);
+        List<UserRole> userRoles = userRoleRepository.findByEndDateBefore(instant);
+        userRoles.forEach(userRole -> userRole.setUserInfo(userRole.getUser().asMap()));
+        return ResponseEntity.ok(userRoles);
+    }
+
+    @GetMapping("/unknown-roles")
+    @Operation(summary = "Get unknown roles", description = "Retrieve roles with unknown Manage application metadata (super user only)")
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<Role>> unknownRoles(@Parameter(hidden = true) User user) {
+        LOG.debug(String.format("/unknown-roles for user %s", user.getEduPersonPrincipalName()));
+        UserPermissions.assertSuperUser(user);
+        List<Role> roles = manage.addManageMetaData(roleRepository.findAll());
+        List<Role> unknownManageRoles = roles.stream().filter(role -> role.getApplicationMaps().stream().anyMatch(applicationMap -> applicationMap.containsKey("unknown"))).toList();
+        return ResponseEntity.ok(unknownManageRoles);
+    }
+
+    @PutMapping("/performance-seed")
+    @Operation(summary = "Seed performance test data", description = "Generate seed roles and users for performance testing (super user only)")
+    public ResponseEntity<Map<String, Object>> performanceSeed(@Parameter(hidden = true) User user,
+                                                               @RequestParam(value = "numberOfRole", required = false, defaultValue = "500") int numberOfRole,
+                                                               @RequestParam(value = "numberOfUsers", required = false, defaultValue = "75000") int numberOfUsers) {
+        LOG.debug("/performance-seed");
+        LOG.debug(String.format("/performance-seed for user %s", user.getEduPersonPrincipalName()));
+        if (!config.isPerformanceSeedAllowed()) {
+            throw new NotAllowedException("performance-seed not allowed");
+        }
+        UserPermissions.assertSuperUser(user);
+        return ResponseEntity.ok(performanceSeed.go(numberOfRole, numberOfUsers));
+    }
+
+    @GetMapping("/landing-page-fix")
+    @Operation(summary = "Fix missing landing pages", description = "Update missing application landing pages from Manage provider metadata (super user only)")
+    public ResponseEntity<Map<String, Integer>> landingPageFix(@Parameter(hidden = true) User user) {
+        LOG.debug(String.format("landing-page-fix for user %s", user.getEduPersonPrincipalName()));
+        UserPermissions.assertSuperUser(user);
+
+        List<ApplicationUsage> applicationUsages = applicationUsageRepository.findByLandingPageIsNull();
+        applicationUsages.stream()
+                .forEach(applicationUsage -> {
+                    Application application = applicationUsage.getApplication();
+                    Map<String, Object> provider = manage.providerById(application.getManageType(), application.getManageId());
+                    if (!CollectionUtils.isEmpty(provider)) {
+                        String url = (String) provider.get("url");
+                        if (StringUtils.hasText(url)) {
+                            applicationUsage.setLandingPage(url);
+                            LOG.debug(String.format("Saving applicationUsage with url %s", url));
+                            applicationUsageRepository.save(applicationUsage);
+                        }
+                    }
+                });
+
+        return Results.okResult();
+    }
+
+}

@@ -8,11 +8,12 @@ import I18n from "../locale/I18n";
 import {MoreLessText} from "./MoreLessText";
 import {isEmpty} from "../utils/Utils";
 import DOMPurify from "dompurify";
-import {useNavigate} from "react-router-dom";
+import {useNavigate} from "react-router";
 
 export const UnitHeaderInviter = ({
                                       role,
                                       userRole,
+                                      inviteAllowed,
                                       managerEmails
                                   }) => {
     const navigate = useNavigate();
@@ -44,10 +45,11 @@ export const UnitHeaderInviter = ({
                     </div>
                 </div>
                 <div className="action-menu-container">
-                    <Button
-                        onClick={() => navigate(`/invitation/new?maintainer=false`, {state: role.id})}
-                        txt={I18n.t("invitations.newGuest")}/>
-
+                    {inviteAllowed &&
+                        <Button
+                            onClick={() => navigate(`/invitation/new?maintainer=false`, {state: role.id})}
+                            txt={I18n.t("invitations.newGuest")}/>
+                    }
                 </div>
             </div>
         </div>

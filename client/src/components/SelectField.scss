@@ -1,4 +1,4 @@
-@import "../styles/vars.scss";
+@use "../styles/vars.scss";
 
 .select-field {
     display: flex;
@@ -23,12 +23,11 @@
         }
 
         border: 1px solid var(--sds--color--gray--300);
-        border-radius: $br;
+        border-radius: vars.$br;
         font-size: 16px;
-        min-height: 48px;
+        min-height: 40px;
 
         &.creatable {
-            height: auto;
             min-height: 48px;
         }
 
@@ -36,20 +35,24 @@
             height: 100%;
             padding-left: 8px;
             border: none;
-            border-radius: $br;
+            border-radius: vars.$br;
         }
 
         .select-inner__control--is-focused {
             outline: none;
             box-shadow: 3px 3px 3px var(--sds--color--blue--200), -3px -3px 1px var(--sds--color--blue--200);
             border: 1px solid var(--sds--color--gray--300) !important;
+            min-height: 48px;
         }
 
         &[disabled] {
-            background-color: $background;
+            background-color: vars.$background;
             cursor: not-allowed;
         }
 
+        .select-inner__indicators {
+            cursor: pointer;
+        }
     }
 
     .select-inner__single-value--is-disabled {
@@ -61,7 +64,7 @@
     }
 
     .select-inner__control--is-disabled {
-        background-color: $background;
+        background-color: vars.$background;
         border-radius: 6px;
     }
 }

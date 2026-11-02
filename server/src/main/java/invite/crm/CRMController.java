@@ -1,0 +1,880 @@
+package invite.crm;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import invite.api.ApplicationResource;
+import invite.api.RoleOperations;
+import invite.audit.UserRoleAuditService;
+import invite.config.HashGenerator;
+import invite.exception.NotFoundException;
+import invite.logging.AccessLogger;
+import invite.logging.Event;
+import invite.mail.MailBox;
+import invite.manage.EntityType;
+import invite.manage.Manage;
+import invite.model.Application;
+import invite.model.ApplicationUsage;
+import invite.model.Authority;
+import invite.model.GroupedProviders;
+import invite.model.Invitation;
+import invite.model.InvitationRole;
+import invite.model.Language;
+import invite.model.Organisation;
+import invite.model.Provisionable;
+import invite.model.Role;
+import invite.model.Status;
+import invite.model.User;
+import invite.model.UserRole;
+import invite.model.UserRoleAudit;
+import invite.provision.ProvisioningService;
+import invite.provision.scim.OperationType;
+import invite.repository.ApplicationRepository;
+import invite.repository.ApplicationUsageRepository;
+import invite.repository.InvitationRepository;
+import invite.repository.OrganisationRepository;
+import invite.repository.RoleRepository;
+import invite.repository.UserRepository;
+import invite.repository.UserRoleRepository;
+import invite.security.UserPermissions;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import lombok.Getter;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.Period;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import static invite.SwaggerOpenIdConfig.API_HEADER_SCHEME_NAME;
+import static invite.SwaggerOpenIdConfig.BASIC_AUTHENTICATION_SCHEME_NAME;
+import static invite.api.InvitationOperations.identityProviderName;
+
+@RestController
+@Transactional
+public class CRMController implements ApplicationResource {
+
+    private static final Log LOG = LogFactory.getLog(CRMController.class);
+
+    private final String collabPersonPrefix;
+    private final String inviterName;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final UserRoleRepository userRoleRepository;
+    @Getter
+    private final ApplicationRepository applicationRepository;
+    @Getter
+    private final ApplicationUsageRepository applicationUsageRepository;
+    private final ProvisioningService provisioningService;
+    private final MailBox mailBox;
+    private final Manage manage;
+    private final Map<String, CRMConfigEntry> crmConfig;
+    private final UserRoleAuditService userRoleAuditService;
+    private final Provisionable provisionable = () -> "SURF CRM";
+    private final InvitationRepository invitationRepository;
+    private final OrganisationRepository organisationRepository;
+    private final RoleOperations roleOperations;
+    private final Environment environment;
+
+
+    @SuppressWarnings("unchecked")
+    public CRMController(@Value("${crm.collab-person-prefix}") String collabPersonPrefix,
+                         @Value("${crm.crm-config-resource}") Resource crmConfigResource,
+                         @Value("${crm.inviter-name}") String inviterName,
+                         UserRepository userRepository,
+                         RoleRepository roleRepository,
+                         UserRoleRepository userRoleRepository,
+                         ApplicationRepository applicationRepository,
+                         ApplicationUsageRepository applicationUsageRepository,
+                         ProvisioningService provisioningService,
+                         ObjectMapper objectMapper,
+                         MailBox mailBox, Manage manage,
+                         UserRoleAuditService userRoleAuditService,
+                         InvitationRepository invitationRepository,
+                         OrganisationRepository organisationRepository,
+                         Environment environment) throws IOException {
+        this.userRepository = userRepository;
+        this.collabPersonPrefix = collabPersonPrefix;
+        this.inviterName = inviterName;
+        this.roleRepository = roleRepository;
+        this.userRoleRepository = userRoleRepository;
+        this.applicationRepository = applicationRepository;
+        this.applicationUsageRepository = applicationUsageRepository;
+        this.provisioningService = provisioningService;
+        this.mailBox = mailBox;
+        this.manage = manage;
+        this.userRoleAuditService = userRoleAuditService;
+        this.invitationRepository = invitationRepository;
+        this.organisationRepository = organisationRepository;
+        this.environment = environment;
+        this.roleOperations = new RoleOperations(this);
+        Map<String, Map<String, Object>> crmConfigRaw = objectMapper.readValue(crmConfigResource.getInputStream(), new TypeReference<>() {
+        });
+        this.crmConfig = crmConfigRaw.entrySet().stream()
+                .map(entry -> new CRMConfigEntry(entry.getKey(), (String) entry.getValue().get("name"),
+                        ((List<Map<String, String>>) entry.getValue().getOrDefault("applications", List.of()))
+                                .stream()
+                                .map(application -> new CRMManageIdentifier(
+                                        EntityType.valueOf(application.get("manageType").toUpperCase()),
+                                        application.get("manageEntityID"))).toList()))
+                .collect(Collectors.toMap(
+                        crmConfigEntry -> crmConfigEntry.code(),
+                        crmConfigEntry -> crmConfigEntry
+                ));
+        LOG.info(String.format("Parsed %s entries from %s", this.crmConfig.size(), crmConfigResource.getDescription()));
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void reconcileCrmRolesWithConfig() {
+        if (environment.acceptsProfiles(Profiles.of("test"))) {
+            return;
+        }
+        List<Role> crmRoles = roleRepository.findByCrmRoleIdIsNotNull();
+        int reconciled = 0;
+        int deleted = 0;
+        for (Role role : crmRoles) {
+            try {
+                CRMConfigEntry crmConfigEntry = this.crmConfig.get(role.getCrmRoleAbbrevation());
+                if (crmConfigEntry == null) {
+                    //crm_config.json is the authoritative source - a sabCode no longer present in it means
+                    //the role itself (and everything tied to it) must be removed
+                    deleteObsoleteCrmRole(role);
+                    deleted++;
+                } else if (reconcileRoleApplications(role, crmConfigEntry)) {
+                    reconciled++;
+                }
+            } catch (RuntimeException e) {
+                //A single unreachable Manage / provisioning failure must never abort application startup
+                LOG.error(String.format("Error reconciling CRM role %s based on crm_config.json", role.getName()), e);
+            }
+        }
+        LOG.info(String.format("CRM startup sync: reconciled applications for %s, deleted %s of %s CRM-linked roles",
+                reconciled, deleted, crmRoles.size()));
+    }
+
+    private void deleteObsoleteCrmRole(Role role) {
+        LOG.warn(String.format("CRM sabCode %s for role %s is no longer present in crm_config.json, deleting the role and its associated data",
+                role.getCrmRoleAbbrevation(), role.getName()));
+        provisioningService.deleteGroupRequest(role);
+        provisioningService.deleteUserRequest(role);
+        roleRepository.deleteRoleById(role.getId());
+    }
+
+    private boolean reconcileRoleApplications(Role role, CRMConfigEntry crmConfigEntry) {
+        Set<ApplicationUsage> desiredApplicationUsages = crmConfigEntry.crmManageIdentifiers().stream()
+                .map(crmManageIdentifier -> {
+                    Optional<Map<String, Object>> provider = manage
+                            .providerByEntityID(crmManageIdentifier.manageType(), crmManageIdentifier.manageEntityID());
+                    if (provider.isEmpty()) {
+                        LOG.warn(String.format("CRM configured Manage entity %s not found for role %s, skipping",
+                                crmManageIdentifier, role.getName()));
+                    }
+                    return provider;
+                })
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(provider -> {
+                    String manageId = (String) provider.get("id");
+                    EntityType manageType = EntityType.valueOf(((String) provider.get("type")).toUpperCase());
+                    Application application = applicationRepository.findByManageIdAndManageTypeOrderById(manageId, manageType)
+                            .orElseGet(() -> applicationRepository.save(new Application(manageId, manageType)));
+                    String landingPage = (String) provider.get("url");
+                    return new ApplicationUsage(application, landingPage);
+                })
+                .collect(Collectors.toSet());
+        Set<String> desiredIdentifiers = desiredApplicationUsages.stream()
+                .map(applicationUsage -> applicationUsage.getApplication().getManageId())
+                .collect(Collectors.toSet());
+        List<String> previousApplicationIdentifiers = role.applicationIdentifiers();
+        if (new HashSet<>(previousApplicationIdentifiers).equals(desiredIdentifiers)) {
+            return false;
+        }
+        //role is an already-managed entity here (loaded via roleRepository.findByCrmRoleIdIsNotNull), so the desired
+        //set must be resolved against the DB before it is ever assigned to role.applicationUsages - staging the
+        //unresolved (transient) set first would dirty the persistence context and trigger an auto-flush mid-resolution,
+        //causing duplicate-key inserts for applications that should have been reused instead of re-created
+        roleOperations.syncRoleApplicationUsages(role, desiredApplicationUsages);
+        Role saved = roleRepository.save(role);
+        provisioningService.updateGroupRequest(previousApplicationIdentifiers, saved, false);
+        LOG.info(String.format("Reconciled applications for CRM role %s based on crm_config.json", role.getName()));
+        return true;
+    }
+
+    @PostMapping(value = "/crm/profile", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Create, update CRM role memberships",
+            description = "Add or delete the CRM roles to the CRM contact")
+    @SecurityRequirement(name = API_HEADER_SCHEME_NAME)
+    @PreAuthorize("hasRole('CRM')")
+    public ResponseEntity<String> contact(@RequestBody CRMContact crmContact) {
+        LOG.info("POST /api/external/v1/crm: " + crmContact);
+
+        List<CRMRole> distinctRoles = new ArrayList<>(crmContact.getRoles().stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(CRMRole::getRoleId, r -> r, (a, b) -> a, LinkedHashMap::new))
+                .values());
+        crmContact.setRoles(distinctRoles);
+
+        boolean created;
+        CRMOrganisation crmOrganisation = crmContact.getOrganisation();
+        Organisation organisation = organisationRepository.findByCrmOrganisationId(crmOrganisation.getOrganisationId())
+                .orElseGet(() -> organisationRepository.save(new Organisation(
+                        crmOrganisation.getOrganisationId(),
+                        crmOrganisation.getName(),
+                        crmOrganisation.getAbbrev()
+                )));
+        if (crmContact.isSuppressInvitation() &&
+                StringUtils.hasText(crmContact.getSchacHomeOrganisation()) && StringUtils.hasText(crmContact.getUid())) {
+            created = provisionUser(crmContact, organisation);
+        } else {
+            created = sendInvitation(crmContact, organisation);
+        }
+
+        return ResponseEntity.ok().body(created ? "created" : "updated");
+    }
+
+    @DeleteMapping(value = "/crm/profile", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete CRM profile",
+            description = "Delete CRM profile")
+    @SecurityRequirement(name = API_HEADER_SCHEME_NAME)
+    @PreAuthorize("hasRole('CRM')")
+    public ResponseEntity<String> delete(@RequestBody CRMContact crmContact) {
+        LOG.info("DELETE /api/external/v1/crm: " + crmContact);
+
+        List<Invitation> invitations = invitationRepository.findByCrmContactIdAndCrmOrganisationId(
+                crmContact.getContactId(), crmContact.getOrganisation().getOrganisationId());
+        invitations.forEach(invitation -> {
+            LOG.info("Deleting CRM invitation: " + invitation.getEmail());
+            this.invitationRepository.delete(invitation);
+        });
+        String organisationId = crmContact.getOrganisation().getOrganisationId();
+        Optional<Organisation> optionalOrganisation = organisationRepository.findByCrmOrganisationId(organisationId);
+        optionalOrganisation
+                .flatMap(organisation -> userRepository.findByCrmContactIdAndOrganisation(crmContact.getContactId(), organisation))
+                .ifPresent(user -> {
+                    long inviteNativeUserRolesCount = user.getUserRoles().stream()
+                            .filter(userRole -> !StringUtils.hasText(userRole.getRole().getCrmRoleId()))
+                            .count();
+                    if (inviteNativeUserRolesCount == 0L) {
+                        LOG.info("Deleting CRM user: " + user.getEmail());
+                        user.getUserRoles().forEach(crmUserRole ->
+                                this.userRoleAuditService.logAction(crmUserRole, UserRoleAudit.ActionType.DELETE));
+                        this.provisioningService.deleteUserRequest(user);
+                        this.userRepository.delete(user);
+                    } else {
+                        List<UserRole> crmUserRoles = user.getUserRoles().stream()
+                                .filter(userRole -> StringUtils.hasText(userRole.getRole().getCrmRoleId()))
+                                .toList();
+
+                        LOG.info("Deleting all CRM roles (but not deleting the user) for user: " + user.getEmail());
+                        crmUserRoles.forEach(crmUserRole -> {
+                            this.userRoleAuditService.logAction(crmUserRole, UserRoleAudit.ActionType.DELETE);
+                            this.provisioningService.deleteUserRoleRequest(crmUserRole);
+                        });
+                        user.getUserRoles().removeIf(userRole -> StringUtils.hasText(userRole.getRole().getCrmRoleId()));
+                        user.setCrmContactId(null);
+                        user.setOrganisation(null);
+                        this.userRepository.save(user);
+                    }
+
+                });
+        return ResponseEntity.ok().body("deleted");
+    }
+
+    @GetMapping(value = {"/api/profile", "/api/external/v1/invite/crm/profile"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    @SecurityRequirement(name = BASIC_AUTHENTICATION_SCHEME_NAME)
+    @SecurityRequirement(name = API_HEADER_SCHEME_NAME)
+    @Operation(summary = "Query for profiles",
+            description = "Based on either 'uid'/'idp' OR 'guid'/'role' search for users and include the CRM roles")
+    @PreAuthorize("hasRole('CRM')")
+    public ResponseEntity<ProfileResponse> query(@RequestParam(value = "uid", required = false) String userUid,
+                                                 @RequestParam(value = "idp", required = false) String idpSchacHomeOrganisation,
+                                                 @RequestParam(value = "guid", required = false) String crmOrganisationId,
+                                                 @RequestParam(value = "role", required = false) String crmRoleName) {
+        LOG.info(String.format("query for profiles: uid=%s, idp=%s, guid=%s, role=%s",
+                userUid, idpSchacHomeOrganisation, crmOrganisationId, crmRoleName));
+        List<User> users;
+        if (StringUtils.hasText(userUid) && StringUtils.hasText(idpSchacHomeOrganisation)) {
+            String sub = this.constructSub(idpSchacHomeOrganisation, userUid);
+            users = userRepository.findBySubIgnoreCase(sub).map(Collections::singletonList).orElse(Collections.emptyList());
+        } else if (StringUtils.hasText(idpSchacHomeOrganisation)) {
+            users = userRepository.findBySchacHomeOrganization(idpSchacHomeOrganisation);
+        } else if (StringUtils.hasText(userUid)) {
+            users = userRepository.findByUid(userUid);
+        } else if (StringUtils.hasText(crmOrganisationId) && StringUtils.hasText(crmRoleName)) {
+            users = organisationRepository.findByCrmOrganisationId(crmOrganisationId)
+                    .map(organisation -> userRoleRepository.findByRoleCrmRoleNameAndRoleOrganisation(crmRoleName, organisation))
+                    .map(userRoles -> userRoles.stream().map(userRole -> userRole.getUser()).toList())
+                    .orElse(Collections.emptyList());
+        } else if (StringUtils.hasText(crmRoleName)) {
+            users = roleRepository.findByCrmRoleName(crmRoleName).stream()
+                    .flatMap(role -> userRoleRepository.findByRole(role).stream()
+                            .map(userRole -> userRole.getUser()))
+                    .toList();
+        } else if (StringUtils.hasText(crmOrganisationId)) {
+            users = organisationRepository.findByCrmOrganisationId(crmOrganisationId)
+                    .map(organisation -> userRoleRepository.findByRoleOrganisation(organisation))
+                    .map(userRoles -> userRoles.stream().map(userRole -> userRole.getUser()).toList())
+                    .orElse(Collections.emptyList());
+        } else {
+            users = userRepository.findByOrganisationNotNull();
+        }
+        users = users.stream()
+                .collect(Collectors.toMap(User::getId, user -> user, (a, b) -> a, LinkedHashMap::new))
+                .values().stream().toList();
+        if (users.isEmpty()) {
+            LOG.info("Returning empty results query for /api/profile");
+            ProfileResponse profileResponse = crmUserNotFoundOrNoRoles();
+            return ResponseEntity.ok(profileResponse);
+        }
+        ProfileResponse profileResponse = new ProfileResponse("OK", 0,
+                users.stream()
+                        .filter(user -> user.getOrganisation() != null)
+                        .map(user ->
+                                new Profile(user.getGivenName(),
+                                        user.getMiddleName(),
+                                        user.getFamilyName(),
+                                        user.getEmail(),
+                                        null,
+                                        user.getSchacHomeOrganization(),
+                                        user.getUid(),
+                                        user.getCrmContactId(),
+                                        Map.of(
+                                                "abbrev", user.getOrganisation().getCrmOrganisationAbbrevation(),
+                                                "name", user.getOrganisation().getCrmOrganisationName(),
+                                                "guid", user.getOrganisation().getCrmOrganisationId()
+                                        ),
+                                        user.getUserRoles().stream()
+                                                .map(userRole -> userRole.getRole())
+                                                .filter(role -> StringUtils.hasText(role.getCrmRoleId()))
+                                                .map(role -> new Authorisation(
+                                                        role.getCrmRoleAbbrevation(),
+                                                        role.getCrmRoleName(),
+                                                        role.getCrmRoleId()))
+                                                .toList()
+                                )).toList());
+        LOG.info(String.format("Results for /api/profile %s", profileResponse));
+        return ResponseEntity.ok(profileResponse);
+    }
+
+    @GetMapping(value = {"/crm/api/v1/profiles"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    @SecurityRequirement(name = API_HEADER_SCHEME_NAME)
+    @Operation(summary = "Query for connection status",
+            description = "Lookup the organisation and return all connected users")
+    @PreAuthorize("hasRole('CRM')")
+    public ResponseEntity<Map<String, ConnectionStatusResponse>> connectionStatus(@RequestBody ConnectionStatus connectionStatus) {
+        String crmOrganisationId = connectionStatus.organisationId();
+        LOG.info(String.format("/crm/api/v1/profiles for crmOrganisationId %s", crmOrganisationId));
+        Optional<Organisation> optionalOrganisation = organisationRepository.findByCrmOrganisationId(crmOrganisationId);
+        if (optionalOrganisation.isEmpty()) {
+            LOG.info(String.format("/crm/api/v1/profiles No organisation found for %s", crmOrganisationId));
+            return ResponseEntity.ok(Map.of());
+        }
+        Organisation organisation = optionalOrganisation.get();
+        Map<String, ConnectionStatusResponse> responseMap = new HashMap<>();
+        userRepository.findByOrganisation(organisation)
+                .forEach(user -> {
+                            boolean hasCRMRole = user.getUserRoles().stream()
+                                    .anyMatch(userRole -> StringUtils.hasText(userRole.getRole().getCrmRoleId()));
+                            CRMStatusCode crmStatusCode = hasCRMRole ? CRMStatusCode.Paired : CRMStatusCode.NotPaired;
+                            String crmContactId = user.getCrmContactId();
+                            responseMap.put(
+                                    crmContactId,
+                                    new ConnectionStatusResponse(
+                                            crmContactId,
+                                            user.getGivenName(),
+                                            user.getMiddleName(),
+                                            user.getFamilyName(),
+                                            user.getName(),
+                                            user.getEmail(),
+                                            "",
+                                            Map.of(
+                                                    "id", 0,
+                                                    "abbrev", organisation.getCrmOrganisationAbbrevation(),
+                                                    "name", organisation.getCrmOrganisationName(),
+                                                    "oid", 0,
+                                                    "guid", organisation.getCrmOrganisationId()
+                                            ),
+                                            Map.of(
+                                                    "uid", user.getUid(),
+                                                    "idp", user.getSchacHomeOrganization()
+                                            ),
+                                            crmStatusCode.getStatus(),
+                                            crmStatusCode.getStatusCode()
+                                    )
+                            );
+                        }
+                );
+
+        invitationRepository
+                .findByCrmOrganisationIdAndStatus(crmOrganisationId, Status.OPEN)
+                .forEach(invitation -> responseMap.put(
+                        invitation.getCrmContactId(),
+                        new ConnectionStatusResponse(
+                                invitation.getCrmContactId(),
+                                null,
+                                null,
+                                null,
+                                null,
+                                invitation.getEmail(),
+                                "",
+                                Map.of(
+                                        "id", 0,
+                                        "abbrev", organisation.getCrmOrganisationAbbrevation(),
+                                        "name", organisation.getCrmOrganisationName(),
+                                        "oid", 0,
+                                        "guid", organisation.getCrmOrganisationId()
+                                ),
+                                Map.of(),
+                                CRMStatusCode.InProcess.getStatus(),
+                                CRMStatusCode.InProcess.getStatusCode()
+                        )
+                ));
+        LOG.info(String.format("/crm/api/v1/profiles Returning %s", responseMap));
+        return ResponseEntity.ok(responseMap);
+    }
+
+    @PostMapping(value = "/crm/api/v1/invite/resend", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Resend an invitation",
+            description = "Resend an invitation based on the CRM OrganisationID and CRM ContactID")
+    @SecurityRequirement(name = API_HEADER_SCHEME_NAME)
+    @PreAuthorize("hasRole('CRM')")
+    public ResponseEntity<ResendInvitationResponse> resendInvitation(@RequestBody ResendInvitation resendInvitation) {
+        LOG.info(String.format("/crm/api/v1/invite/resend for %s", resendInvitation));
+        List<Invitation> invitations = invitationRepository.findByCrmContactIdAndCrmOrganisationId(resendInvitation.crmContatcId(),
+                resendInvitation.crmOrganisationId());
+        invitations.forEach(invitation -> {
+            List<Role> requestedRoles = invitation.getRoles().stream()
+                    .map(InvitationRole::getRole).toList();
+            List<GroupedProviders> groupedProviders = manage.getGroupedProviders(requestedRoles);
+
+            mailBox.sendInviteMail(provisionable,
+                    invitation,
+                    groupedProviders,
+                    invitation.getLanguage(),
+                    Optional.empty());
+            invitation.setExpiryDate(Instant.now().plus(Period.ofDays(14)));
+            invitationRepository.save(invitation);
+
+            AccessLogger.invitation(LOG, Event.Resend, invitation);
+
+        });
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+        ResendInvitationResponse response = new ResendInvitationResponse(timestamp, 200, "ok", "Resend invitation");
+        LOG.info(String.format("/crm/api/v1/invite/resend returning %s", response));
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping(value = "/crm/api/v1/invite/remove", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Remove all CRM roles memberships from a user",
+            description = "Remove all CRM roles memberships from a user")
+    @SecurityRequirement(name = API_HEADER_SCHEME_NAME)
+    @PreAuthorize("hasRole('CRM')")
+    public ResponseEntity<String> remove(@RequestBody RemoveRoles removeRoles) {
+        LOG.info("POST /crm/api/v1/invite/remove: " + removeRoles);
+
+        Optional<Organisation> optionalOrganisation = organisationRepository.findByCrmOrganisationId(removeRoles.crmOrganisationId());
+        optionalOrganisation
+                .flatMap(organisation -> userRepository
+                        .findByCrmContactIdAndOrganisation(removeRoles.crmContatcId(), organisation))
+                .ifPresent(user -> {
+                    LOG.info("Removing roles from CRM user: " + user.getEmail());
+
+                    Predicate<UserRole> predicate = userRole -> StringUtils.hasText(userRole.getRole().getCrmRoleId());
+                    user.getUserRoles().stream()
+                            .filter(predicate)
+                            .forEach(userRole -> {
+                                this.provisioningService.deleteUserRoleRequest(userRole);
+                                this.userRoleAuditService.logAction(userRole, UserRoleAudit.ActionType.DELETE);
+                            });
+                    user.getUserRoles().removeIf(predicate);
+                    this.userRepository.save(user);
+                });
+        return ResponseEntity.ok().body("removed");
+    }
+
+    @GetMapping(value = "/crm/api/v1/organisations", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get all CRM organisations")
+    @SecurityRequirement(name = API_HEADER_SCHEME_NAME)
+    @PreAuthorize("hasRole('CRM')")
+    public ResponseEntity<List<CRMOrganisation>> organisations() {
+        LOG.info("/crm/api/v1/organisations called");
+
+        List<Organisation> organisations = organisationRepository.findByCrmOrganisationIdIsNotNull();
+        List<CRMOrganisation> crmOrganisations = organisations.stream()
+                .map(organisation -> new CRMOrganisation(
+                        organisation.getCrmOrganisationId(),
+                        organisation.getCrmOrganisationAbbrevation(),
+                        organisation.getCrmOrganisationName()
+                ))
+                .toList();
+        LOG.info(String.format("/crm/api/v1/organisations returning %s", crmOrganisations));
+        return ResponseEntity.ok(crmOrganisations);
+    }
+
+    @DeleteMapping(value = "/crm/api/v1/organisations", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Delete CRM organisation")
+    @SecurityRequirement(name = API_HEADER_SCHEME_NAME)
+    @PreAuthorize("hasRole('CRM')")
+    public ResponseEntity<Map<String, String>> deleteOrganisation(@RequestBody CRMOrganisation crmOrganisation) {
+        Optional<Organisation> optionalOrganisation = organisationRepository.findByCrmOrganisationId(crmOrganisation.getOrganisationId());
+        return optionalOrganisation
+                .map(organisation -> {
+                    organisationRepository.delete(organisation);
+                    return ResponseEntity.ok(Map.of("status", "deleted"));
+                }).orElseGet(() -> ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                        Map.of("status",
+                                String.format("Organisation with crmOrganisationId %s not found", crmOrganisation.getOrganisationId()))));
+    }
+
+    @PostMapping(value = "/crm/api/v1/invite/send", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Send invite for CRM role memberships",
+            description = "Send invite for CRM role memberships")
+    @SecurityRequirement(name = API_HEADER_SCHEME_NAME)
+    @PreAuthorize("hasRole('CRM')")
+    public ResponseEntity<String> send(@RequestBody SendInvitation sendInvitation) {
+        LOG.info("POST /crm/api/v1/invite/send: " + sendInvitation);
+
+        if (CollectionUtils.isEmpty(sendInvitation.roles())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Roles are required for /crm/api/v1/invite/send");
+        }
+
+        Organisation organisation = organisationRepository.findByCrmOrganisationId(sendInvitation.crmOrganisationId())
+                .orElseThrow(() -> new NotFoundException("Organisation not found: " + sendInvitation.crmOrganisationId()));
+        CRMContact crmContact = new CRMContact();
+        crmContact.setEmail(sendInvitation.email());
+        crmContact.setRoles(sendInvitation.roles());
+        crmContact.setContactId(sendInvitation.crmContatcId());
+
+        sendInvitation(crmContact, organisation);
+
+        return ResponseEntity.ok().body("send");
+    }
+
+    @GetMapping(value = "/api/external/v1/system/crm/sync", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Map<CRMSync, List<Map<String, String>>>>> syncReport(@Parameter(hidden = true) User user) {
+        LOG.info("GET /api/v1/crm");
+
+        UserPermissions.assertSuperUser(user);
+        List<Role> crmRoles = roleRepository.findByCrmRoleIdIsNotNull();
+        Map<String, Map<CRMSync, List<Map<String, String>>>> results = new HashMap<>();
+        //Now check if there are applicationUsages#applications that are not in the CRM config
+        crmRoles.forEach(role -> {
+            results.put(role.getName(), Map.of(
+                    CRMSync.applications_missing_in_invite, new ArrayList<>(),
+                    CRMSync.applications_missing_in_crm, new ArrayList<>(),
+                    CRMSync.crm_applications_missing_in_manage, new ArrayList<>()));
+            CRMConfigEntry crmConfigEntry = this.crmConfig.get(role.getCrmRoleAbbrevation());
+            //Might be null, as no invitations are send out yet for this role
+            if (crmConfigEntry != null) {
+                List<Map<String, Object>> crmConfiguredProviders = crmConfigEntry.crmManageIdentifiers().stream()
+                        .map(crmManageIdentifier -> {
+                            Optional<Map<String, Object>> provider = manage
+                                    .providerByEntityID(crmManageIdentifier.manageType(), crmManageIdentifier.manageEntityID());
+                            if (provider.isEmpty()) {
+                                results.get(role.getName())
+                                        .get(CRMSync.crm_applications_missing_in_manage)
+                                        .add(crmManageIdentifier.toProvider());
+                            }
+                            return provider;
+                        })
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .toList();
+                List<Application> applications = role.getApplicationUsages().stream()
+                        .map(applicationUsage -> applicationUsage.getApplication())
+                        .toList();
+                applications
+                        .forEach(application -> {
+                            boolean missingInCrmApplication = crmConfiguredProviders.stream()
+                                    .noneMatch(provider -> provider.get("id").equals(application.getManageId()));
+                            // This application is in the Invite database, but is not configured in the CRM config
+                            if (missingInCrmApplication) {
+                                Map<String, Object> provider = manage.providerById(application.getManageType(), application.getManageId());
+                                if (!CollectionUtils.isEmpty(provider)) {
+                                    results.get(role.getName())
+                                            .get(CRMSync.applications_missing_in_crm)
+                                            .add(Map.of("entityid", (String) provider.get("entityid"),
+                                                    "type", application.getManageType().collectionName()));
+                                }
+                            }
+                        });
+                // Now find all applications that are configured in the CRM config, but are not in the Invite database
+                List<Map<String, String>> applicationsMissingInInvite = crmConfiguredProviders.stream()
+                        .filter(provider -> applications.stream()
+                                .noneMatch(application -> application.getManageId().equals(provider.get("id"))))
+                        .map(provider -> Map.of("entityid", (String) provider.get("entityid"),
+                                "type", (String) provider.get("type")))
+                        .toList();
+                results.get(role.getName()).get(CRMSync.applications_missing_in_invite).addAll(applicationsMissingInInvite);
+            }
+        });
+        //Now filter out all roles that have nothing to report
+        results.entrySet().removeIf(entry -> entry.getValue().values().stream().allMatch(Collection::isEmpty));
+        return ResponseEntity.ok().body(results);
+    }
+
+    private ProfileResponse crmUserNotFoundOrNoRoles() {
+        return new ProfileResponse("Could not find any profiles with the given search parameters", 50, List.of());
+    }
+
+    private boolean provisionUser(CRMContact crmContact, Organisation organisation) {
+        String sub = this.constructSub(crmContact.getSchacHomeOrganisation(), crmContact.getUid());
+        Optional<User> optionalUser = userRepository.findBySubIgnoreCase(sub);
+        User user = optionalUser.orElseGet(() -> createUser(crmContact, sub, organisation));
+        if (optionalUser.isPresent()) {
+            //Existing Invite users must be enriched with CRM info
+            user.setCrmContactId(crmContact.getContactId());
+            user.setOrganisation(organisation);
+            user.setUid(crmContact.getUid());
+            user.setMiddleName(crmContact.getMiddlename());
+        }
+
+        List<CRMRole> newCrmRoles = syncCrmRoles(crmContact, user);
+
+        List<Role> roles = convertCrmRolesToInviteRoles(crmContact, newCrmRoles, organisation);
+        roles
+                .forEach(role -> {
+                    UserRole userRole = new UserRole(Authority.GUEST, role);
+                    user.addUserRole(userRole);
+
+                    userRoleAuditService.logAction(userRole, UserRoleAudit.ActionType.ADD);
+                    this.provisioningService.updateGroupRequest(userRole, OperationType.add);
+                });
+        userRepository.save(user);
+
+        LOG.info(String.format("Provisioned user %s with roles %s",
+                user.getEmail(), roles.stream().map(Role::getName).collect(Collectors.joining(","))));
+
+        return optionalUser.isEmpty();
+    }
+
+    private User createUser(CRMContact crmContact, String sub, Organisation organisation) {
+        User unsavedUser = new User(
+                false,
+                crmContact.getEmail(),
+                sub,
+                crmContact.getSchacHomeOrganisation(),
+                crmContact.getFirstname(),
+                crmContact.getSurname(),
+                crmContact.getEmail());
+        //Need to keep track of this, for reporting back to CRM API consumers
+        unsavedUser.setMiddleName(crmContact.getMiddlename());
+        unsavedUser.setUid(crmContact.getUid());
+        unsavedUser.setCrmContactId(crmContact.getContactId());
+        unsavedUser.setOrganisation(organisation);
+        User user = userRepository.save(unsavedUser);
+
+        LOG.info(String.format("Created new user %s with sub %s",
+                user.getEmail(), sub));
+
+        this.provisioningService.newUserRequest(user);
+        return user;
+    }
+
+    private String constructSub(String schacHomeOrganisation, String uid) {
+        return String.format("%s:%s:%s", collabPersonPrefix, schacHomeOrganisation, uid.replace("@", "_"));
+    }
+
+    private List<CRMRole> syncCrmRoles(CRMContact crmContact, User user) {
+        LOG.info(String.format("Start syncing crmRoles %s for user %s", crmContact.getRoles(), user.getEmail()));
+        // Removes roles no longer present in CRM
+        user.getUserRoles().removeIf(userRole -> {
+            Role role = userRole.getRole();
+            //Ensure not to delete regular non-CRM roles
+            boolean isDeleted = StringUtils.hasText(role.getCrmRoleId()) && crmContact.getRoles().stream()
+                    .noneMatch(crmRole -> crmRole.getRoleId().equals(role.getCrmRoleId()));
+            if (isDeleted) {
+                this.provisioningService.updateGroupRequest(userRole, OperationType.remove);
+            }
+            return isDeleted;
+        });
+        List<Role> currentRoles = user.getUserRoles().stream()
+                .map(userRole -> userRole.getRole())
+                .toList();
+        // Return all the new CRM roles
+        List<CRMRole> crmRoles = crmContact.getRoles().stream()
+                .filter(crmRole -> currentRoles.stream()
+                        .noneMatch(role -> crmRole.getRoleId().equalsIgnoreCase(role.getCrmRoleId())))
+                .toList();
+        LOG.info(String.format("Finished syncing crmRoles %s for user %s", crmContact.getRoles(), user.getEmail()));
+        return crmRoles;
+    }
+
+    private boolean sendInvitation(CRMContact crmContact, Organisation organisation) {
+        Optional<User> optionalUser =
+                userRepository.findByCrmContactIdAndOrganisation(
+                        crmContact.getContactId(), organisation);
+        List<Invitation> invitations = invitationRepository
+                .findByCrmContactIdAndCrmOrganisationIdAndStatus(crmContact.getContactId(),
+                        organisation.getCrmOrganisationId(), Status.OPEN);
+        if (!invitations.isEmpty()) {
+            //When the mail address or roles are different we delete all outstanding invitations and proceed
+            Invitation lastInvitation = invitations.stream()
+                    .max(Comparator.comparing(Invitation::getCreatedAt))
+                    .orElseThrow(() -> new NoSuchElementException("The last will be the first"));
+            Set<String> invitationCrmRoleIds = lastInvitation.getRoles().stream()
+                    .map(InvitationRole::getRole)
+                    .map(Role::getCrmRoleId)
+                    .collect(Collectors.toSet());
+            Set<String> crmRoleIds = crmContact.getRoles().stream()
+                    .map(CRMRole::getRoleId)
+                    .collect(Collectors.toSet());
+            String crmRoleNames = crmContact.getRoles().stream()
+                    .map(CRMRole::getName)
+                    .collect(Collectors.joining(", "));
+            if (lastInvitation.getEmail().equalsIgnoreCase(crmContact.getEmail()) && invitationCrmRoleIds.equals(crmRoleIds)) {
+                LOG.info(String.format("Not sending mail because there is an outstanding invitations to %s and exact the same roles %s",
+                        lastInvitation.getEmail(),
+                        crmRoleNames));
+                return false;
+            } else {
+                LOG.info(String.format("Deleting all outstanding invitations to %s as there is a new invitation with different email %s or different roles %s",
+                        crmContact.getEmail(),
+                        lastInvitation.getEmail(),
+                        crmRoleNames));
+                invitationRepository.deleteAll(invitations);
+            }
+        }
+        List<CRMRole> newCrmRoles = syncCrmRoles(crmContact, optionalUser.orElse(new User()));
+        //Only save the user when the user already existed
+        optionalUser.ifPresent(user -> userRepository.save(user));
+        // Maps CRM roles to existing or new roles
+        List<Role> roles = convertCrmRolesToInviteRoles(crmContact, newCrmRoles, organisation);
+        //If there are no new roles, then we can't do anything
+        if (!CollectionUtils.isEmpty(roles)) {
+            //There are roles in CRM without applications, we need to ignore those
+            List<GroupedProviders> groupedProviders = manage.getGroupedProviders(roles);
+            Set<InvitationRole> invitationRoles = roles.stream()
+                    .map(role -> new InvitationRole(role))
+                    .collect(Collectors.toSet());
+            Invitation invitation = createInvitation(crmContact, invitationRoles, organisation);
+
+            Optional<String> idpName = identityProviderName(manage, invitation);
+            if (crmContact.isSuppressInvitation()) {
+                LOG.info(String.format("Not actualy sending invitation to user %s for roles %s, because suppressInvitation is set to true",
+                        invitation.getEmail(), roles.stream().map(Role::getName).collect(Collectors.joining(","))));
+            } else {
+                LOG.info(String.format("Sending invitation to user %s for roles %s",
+                        invitation.getEmail(), roles.stream().map(Role::getName).collect(Collectors.joining(","))));
+                mailBox.sendInviteMail(this.provisionable, invitation, groupedProviders, Language.en, idpName);
+            }
+        }
+        return optionalUser.isEmpty();
+    }
+
+    private List<Role> convertCrmRolesToInviteRoles(CRMContact crmContact, List<CRMRole> newCrmRoles, Organisation organisation) {
+        return newCrmRoles.stream()
+                .map(crmRole -> roleRepository.findByCrmRoleIdAndOrganisation(
+                                crmRole.getRoleId(), organisation)
+                        .or(() -> this.createRole(crmContact.getOrganisation(), crmRole, organisation)))
+                .flatMap(Optional::stream)
+                .toList();
+    }
+
+    private Optional<Role> createRole(CRMOrganisation crmOrganisation, CRMRole crmRole, Organisation organisation) {
+        CRMConfigEntry crmConfigEntry = this.crmConfig.get(crmRole.getSabCode());
+        if (crmConfigEntry == null) {
+            LOG.error(String.format("Missing CRM sabCode in the configuration: %s", crmRole));
+            return Optional.empty();
+        }
+        if (crmConfigEntry.crmManageIdentifiers().isEmpty()) {
+            return Optional.empty();
+        }
+        Set<ApplicationUsage> applicationUsages = crmConfigEntry.crmManageIdentifiers().stream()
+                .map(crmManageIdentifier -> manage
+                        .providerByEntityID(crmManageIdentifier.manageType(), crmManageIdentifier.manageEntityID())
+                        .orElseThrow(() -> new NotFoundException("Manage entity not found: " + crmManageIdentifier)))
+                .map(provider -> {
+                    String manageId = (String) provider.get("id");
+                    EntityType manageType = EntityType.valueOf(((String) provider.get("type")).toUpperCase());
+                    Application application = applicationRepository.findByManageIdAndManageTypeOrderById(manageId, manageType)
+                            .orElseGet(() -> applicationRepository.save(new Application(manageId, manageType)));
+                    String landingPage = (String) provider.get("url");
+                    return new ApplicationUsage(application, landingPage);
+                })
+                .collect(Collectors.toSet());
+        String organisationName = crmOrganisation != null ? crmOrganisation.getName() : organisation.getCrmOrganisationName();
+        Role unsavedRole = new Role(
+                String.format("%s for %s", crmConfigEntry.name(), organisationName),
+                String.format("CRM role %s for organisation %s", crmConfigEntry.name(), organisationName),
+                applicationUsages,
+                365 * 25,
+                true,
+                false
+        );
+        unsavedRole.setCrmRoleId(crmRole.getRoleId());
+        unsavedRole.setCrmRoleName(crmConfigEntry.name());
+        unsavedRole.setCrmRoleAbbrevation(crmRole.getSabCode());
+        unsavedRole.setOrganisation(organisation);
+        unsavedRole.setOrganizationGUID(organisation.getCrmOrganisationId());
+
+        Role role = roleRepository.save(unsavedRole);
+        this.provisioningService.newGroupRequest(role);
+        return Optional.of(role);
+    }
+
+    private Invitation createInvitation(CRMContact crmContact, Set<InvitationRole> invitationRoles, Organisation organisation) {
+        Invitation invitation = new Invitation(
+                Authority.GUEST,
+                HashGenerator.generateRandomHash(),
+                crmContact.getEmail(),
+                true,
+                false,
+                null,
+                false,
+                null,
+                Language.en,
+                null,
+                null,//Defauly expiryDate
+                null,
+                invitationRoles,
+                Set.of(),
+                null
+        );
+        CRMOrganisation crmOrganisation = crmContact.getOrganisation();
+        String crmOrganisationId = crmOrganisation != null ? crmOrganisation.getOrganisationId() : organisation.getCrmOrganisationId();
+        invitation.setOrganizationGUID(crmOrganisationId);
+        invitation.setCrmOrganisationId(crmOrganisationId);
+        invitation.setCrmContactId(crmContact.getContactId());
+        invitation.setRemoteApiUser(inviterName);
+        invitationRepository.save(invitation);
+        return invitation;
+    }
+}

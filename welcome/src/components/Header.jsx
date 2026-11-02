@@ -2,13 +2,13 @@ import React from "react";
 import "./Header.scss";
 import {Logo, LogoColor, LogoType} from "@surfnet/sds";
 import {UserMenu} from "./UserMenu";
-import {Link} from "react-router-dom";
+import {Link} from "react-router";
 import {useAppStore} from "../stores/AppStore";
 import I18n from "../locale/I18n";
 
 export const Header = () => {
 
-    const {user, config} = useAppStore(state => state);
+    const {user} = useAppStore(state => state);
     const actions = [];
     return (
         <div className="header-container">
@@ -20,7 +20,6 @@ export const Header = () => {
                 </Link>
                 {(user && user.id) &&
                     <UserMenu user={user}
-                              config={config}
                               actions={actions}
                     />
                 }
