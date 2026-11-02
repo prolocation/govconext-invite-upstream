@@ -1,15 +1,14 @@
-@use "../styles/mixins";
-@use "../styles/vars";
+@import "../styles/mixins";
 
 .mod-invitation-form {
 
     &.inviter {
-        background-color: vars.$background;
+        background-color: $background;
     }
 
     .invitation-form {
-        @include mixins.page;
-        @include mixins.form;
+        @include page;
+        @include form;
 
         &.inviter {
             max-width: 820px;
@@ -38,17 +37,9 @@
             grid-column-start: first;
         }
 
-        .advanced-settings-container {
-            .select-field.requested-authn-context {
-                margin-top: 0;
-                padding-bottom: 20px;
-                border-bottom: 1px solid var(--sds--color--gray--200);
-            }
-        }
-
-        em.info {
+        p.info {
             grid-column-start: first;
-            margin-top: 6px;
+            margin-top: 4px;
         }
 
         .inviter-wrapper {
@@ -58,7 +49,7 @@
             border: 1px solid var(--sds--color--gray--400);
             background-color: white;
 
-            @media (max-width: vars.$medium) {
+            @media (max-width: $medium) {
                 padding: 25px;
             }
         }
@@ -106,42 +97,6 @@
 
             .sds--text-field-container div:last-child {
                 margin-left: auto;
-            }
-        }
-
-        .role-expiry-date-container {
-            grid-column-start: first;
-            display: flex;
-            flex-direction: column;
-            border-bottom: 1px solid var(--sds--color--gray--200);
-            padding-bottom: 15px;
-
-            p.label {
-                font-weight: 600;
-                margin: 12px var(--sds--space--1) 0 0;
-            }
-
-            .role-expiry-date {
-                display: flex;
-                gap: 15px;
-                align-items: center;
-
-                .input-select-inner {
-                    width: 150px;
-
-                    .select-inner__control {
-                        height: 48px;
-                    }
-                }
-
-                .date-field {
-                    margin-top: 0;
-                }
-            }
-
-            div.input-field.inner-switch {
-                padding-bottom: 0;
-                border-bottom: none;
             }
         }
     }

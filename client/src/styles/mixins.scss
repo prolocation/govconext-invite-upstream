@@ -1,4 +1,4 @@
-@use "../styles/vars";
+@import "../styles/vars";
 
 
 @mixin input-field {
@@ -12,11 +12,11 @@
 }
 
 @mixin page {
-    max-width: vars.$max-width;
+    max-width: $medium;
     width: 100%;
     margin: 0 auto;
 
-    @media (max-width: vars.$medium) {
+    @media (max-width: $medium) {
         padding: 0 15px;
     }
 
@@ -28,11 +28,6 @@
     column-gap: 50px;
     display: grid;
     grid-template-columns: [first] 1fr [second] 1fr;
-
-    @media (max-width: vars.$medium) {
-        padding: 0 15px;
-        grid-template-columns: [first] 1fr;
-    }
 
     .input-field, .select-field, .date-field, .error-indication, .sds--checkbox-container {
         grid-column-start: first;
@@ -50,7 +45,7 @@
 
     .user-role .sds--checkbox-container {
         margin-top: 0;
-        @media (max-width: vars.$medium) {
+        @media (max-width: $medium) {
             margin-bottom: 20px;
         }
     }
@@ -79,7 +74,7 @@
         }
 
     }
-    @media (max-width: vars.$medium) {
+    @media (max-width: $medium) {
         grid-template-columns: [first] 1fr;
     }
 }

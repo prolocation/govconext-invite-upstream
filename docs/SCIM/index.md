@@ -8,38 +8,12 @@ Providers te sturen.
 
 ## Begrippen
 
-| Begrip | Omschrijving |
-| --- | --- |
+|   |   |
+|---|---|
 | Service Provider | Een applicatie bij de instelling, waar een gast-gebruiker toegang moet krijgen |
-| SCIM client | De applicatie die de gebruikersinformatie naar de Service Providers stuurt; De Invite-applicatie backend |
+| SCIM client  | De applicatie die de gebruikersinformatie naar de Serice Providers stuurt; De Invite-applicatie backend |
 
-## Authenticatie
-
-De SCIM-endpoints kunnen per instelling op verschillende manieren worden beveiligd.
-De invite-applicatie ondersteunt op dit moment de volgende authenticatiemethoden:
-
-- **HTTP Basic Authentication**  
-  De client stuurt een `Authorization: Basic ...` header met gebruikersnaam en
-  wachtwoord.
-
-- **Bearer token authenticatie**  
-  De client stuurt een `Authorization: Bearer ...` header met een vooraf
-  verstrekt token.
-
-## Aanvragen
-
-Stuur de gegevens voor het SCIM endpoint naar support@surfconext.nl. Vermeld in ieder geval:
-
-- De omgeving waarop je aan wil sluiten: SURFconext productie of SURFconext test
-- De volledige url van het SCIM endpoint
-- Door welke instelling dit endpoint gebruikt gaat worden
-- Welk SAML-attribuut of openid claim je als 'username' in het SAML bericht verwacht
-- De username/wachtwoord voor basic auth of het bearer-token voor header authenticatie.
-Voor productiekoppelingen het wachtwoord of token via een beveiligde dienst, zoals bijvoorbeeld SURFfilesender, verzenden.
-- Voor welke (op SURFconext aangesloten) applicaties gebruiker en rollen moeten worden doorgegeven. Bij voorkeur het client-id of entity-id.
-- Of het endpoint alleen gebruikers (zonder groepen) wil ontvangen.
-
-## Acties
+## Akties
 
 De endpoints bij de instellingen ondersteunen de volgende operaties:
 
@@ -48,10 +22,7 @@ De endpoints bij de instellingen ondersteunen de volgende operaties:
 - Replace: PUT `https://example.com/{v}/{resource}/{id}`
 - Delete: DELETE `https://example.com/{v}/{resource}/{id}`
 - Update: PATCH `https://example.com/{v}/{resource}/{id}`
-- Search: GET `https://example.com/{v}/{resource}?filter={attribute}{op}{value}&sortBy={attributeName}&sortOrder={ascending|descending}`
-
-De invite-applicatie roept alleen Create, Replace, Update en Delete aan; Read
-en Search worden niet gebruikt.
+- Search: GET `https://example.com/{v}/{resource}?ﬁlter={attribute}{op}{value}&sortBy={attributeName}&sortOrder={ascending|descending}`
 
 PUT operaties leveren het complete object; PATCH operaties geven het verschil
 met het huidige object door. [Zie rfc7644 section-3.5.2](https://datatracker.ietf.org/doc/html/rfc7644#section-3.5.2)
@@ -63,30 +34,11 @@ Er zijn meerdere attributen die een gebruiker of groep identificeren:
 - **id** : De identifier voor een gebruiker of groep bij de Service Provider
 - **externalId** : De identifier binnen de gastenapplicatie
 - **userName** : De identifier voor een gebruiker bij de Service Provider,
-in het SCIM protocol de inlognaam voor de gebruiker als deze bij de Service
-Provider in gaat loggen.
+in het SCIM protocol de inlognaam voor de gebruiker als deze bij de Service Provider in gaat loggen.
 
-Voor de gebruikers die via de invite-applicatie beheerd worden, worden de
-`userName` en `externalId` gevuld met een attribuut van de gebruiker, zodat ze
-ook bij een SAML of oidc authenticatie herkend kunnen worden. Per endpoint kan
-door SURFconext support met `scim_user_identifier` worden ingesteld welk attribuut gebruikt
-wordt:
-
-| `scim_user_identifier` | Attribuut |
-| --- | --- |
-| `eduperson_principal_name` (standaard) | eduPersonPrincipalName (eppn) |
-| `subject_id` | subject_id (OIDC-claim) |
-| `uids` | uids (SAML-attribuut) |
-| `email` | e-mailadres van de gebruiker |
-| `eduID` | het (institutionele) eduID-pseudoniem |
-
-Als het gekozen attribuut leeg is, valt de invite-applicatie terug op de
-eduPersonPrincipalName (eppn). Bij `scim_user_identifier` = `eduID`
-provisioneert de invite-applicatie eerst het eduID van de gebruiker bij de
-instelling en gebruikt de teruggekregen institutionele eduID-waarde als
-`userName` en `externalId`. Voor gastgebruik met eduID heeft
-[de eduID identifier](https://servicedesk.surf.nl/wiki/spaces/IAM/pages/128910006/Attributes+in+SURFconext#AttributesinSURFconext-eduIDeduID)
-de voorkeur.
+Voor de gebruikers die via de invite-applicatie beheerd worden, gebruiken we de
+eduPersonPrincipalName (eppn) voor de indentifiers, zodat ze ook bij een SAML
+of oidc authenticatie herkend kunnen worden.
 
 ## Gebruikers
 
@@ -106,32 +58,21 @@ Content-Length: ...
 Content-Type: application/json
 {
   "schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],
-  "externalId":"c2cd7d6e-63fc-493a-8746-62fb2d3f8806",
-  "userName":"c2cd7d6e-63fc-493a-8746-62fb2d3f8806",
+  "externalId":"c2cd7d6e-63fc-493a-8746-62fb2d3f8806@eduid.nl",
+  "userName":"c2cd7d6e-63fc-493a-8746-62fb2d3f8806@eduid.nl",
   "name":{
-    "formatted":"Peter Havekes",
     "familyName":"Havekes",
     "givenName":"Peter"
   },
   "displayName": "Peter Havekes",
-  "active": true,
   "emails":[
     {
       "type":"other",
-      "value":"peter@gmail.com"
-    }
-  ],
-  "phoneNumbers":[
-    {
-      "type":"other",
-      "value":"+31600000000"
+      "value":"peter@gmnail.com"
     }
   ]
 }
 ```
-
-Het `phoneNumbers`-attribuut bevat altijd een dummy-nummer
-(`+31600000000`), omdat sommige systemen dit attribuut verplicht stellen.
 
 #### Response
 
@@ -156,24 +97,17 @@ Location: https://example.com/v1/Users/{UserID at SP}
     "givenName":"Peter"
   },
   "id": "{UserID at SP}",
-  "userName":"c2cd7d6e-63fc-493a-8746-62fb2d3f8806",
+  "userName":"c2cd7d6e-63fc-493a-8746-62fb2d3f8806@eduid.nl",
   "emails":[
     {
       "type":"other",
-      "value":"peter@gmail.com"
+      "value":"peter@gmnail.com"
     }
   ]
 }
 ```
 
-De **{UserID at SP}** uit het antwoord wordt in de Invite-applicatie opgeslagen
-bij de user, voor toekomstige updates van de gebruiker.
-
-Als bij het aanmaken van de uitnodiging [via de API](https://invite.test.surfconext.nl/ui/swagger-ui/index.html#/invitation-controller/newInvitation)
-gebruik is gemaakt van `invitesWithInternalPlaceholderIdentifiers`, dan zal de
-waarde van `internalPlaceholderIdentifier` worden doorgegeven als
-`"externalId": "{internalPlaceholderIdentifier}"` bij het POST bericht om een
-gebruiker aan te maken.
+De **{UserID at SP}** uit het antwoord wordt in de Invite-applicatie opgeslagen bij de user, voor toekomstige updates van de gebruiker.
 
 ### Update gebruiker
 
@@ -183,7 +117,7 @@ dan sturen we een geupdate user-object naar alle service providers waar deze geb
 #### Request
 
 ```curl
-PUT /v1/Users/{UserID at SP}  HTTP/1.1
+PUT /v1/users/{UserID at SP}  HTTP/1.1
 Accept: application/json
 Authorization: Basic dXNlcjpwYXNzd29yZA==
 Host: example.com
@@ -191,26 +125,18 @@ Content-Length: ...
 Content-Type: application/json
 {
   "schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],
-  "externalId":"c2cd7d6e-63fc-493a-8746-62fb2d3f8806",
-  "userName":"c2cd7d6e-63fc-493a-8746-62fb2d3f8806",
+  "externalId":"c2cd7d6e-63fc-493a-8746-62fb2d3f8806@eduid.nl",
+  "userName":"c2cd7d6e-63fc-493a-8746-62fb2d3f8806@eduid.nl",
   "name":{
-    "formatted":"Peter Havekes-Nieuwenaam",
     "familyName":"Havekes-Nieuwenaam",
     "givenName":"Peter"
   },
   "id": "{UserID at SP}",
   "displayName": "Peter Havekes-Nieuwenaam",
-  "active": true,
   "emails":[
     {
       "type":"other",
-      "value":"peter@gmail.com"
-    }
-  ],
-  "phoneNumbers":[
-    {
-      "type":"other",
-      "value":"+31600000000"
+      "value":"peter@gmnail.com"
     }
   ]
 }
@@ -239,7 +165,7 @@ Location: https://example.com/v1/Users/{UserID at SP}
     "resourceType": "User"
   },
   "id": "{UserID at SP}",
-  "userName":"c2cd7d6e-63fc-493a-8746-62fb2d3f8806",
+  "userName":"c2cd7d6e-63fc-493a-8746-62fb2d3f8806@eduid.nl",
   "emails":[
     {
       "type":"other",
@@ -251,46 +177,15 @@ Location: https://example.com/v1/Users/{UserID at SP}
 
 ### Verwijder gebruiker
 
-Gebruikers worden na het verlopen van hun laatste rol bij een applicatie
-verwijderd uit SURFconext Invite, en ook bij alle service providers waar de
-gebruiker is aangemaakt. Eerst wordt de gebruiker uit alle groepen
-verwijderd; het gebruiker-object zelf wordt alleen verwijderd bij de service
-providers waar geen andere rollen meer van toepassing zijn.
+Niet actieve gebruikers worden na X dagen verwijderd uit de invite applicatie, en ook bij alle service providers waar de gebruiker is aangemaakt.
 
 #### Request
 
 ```curl
-DELETE /v1/Users/{UserID at SP}  HTTP/1.1
+DELETE /users/{UserID at SP}  HTTP/1.1
 Accept: application/json
 Authorization: Basic dXNlcjpwYXNzd29yZA==
 Host: example.com
-Content-Length: ...
-Content-Type: application/json
-{
-  "schemas":["urn:ietf:params:scim:schemas:core:2.0:User"],
-  "externalId":"c2cd7d6e-63fc-493a-8746-62fb2d3f8806",
-  "userName":"c2cd7d6e-63fc-493a-8746-62fb2d3f8806",
-  "name":{
-    "formatted":"Peter Havekes",
-    "familyName":"Havekes",
-    "givenName":"Peter"
-  },
-  "id": "{UserID at SP}",
-  "displayName": "Peter Havekes",
-  "active": true,
-  "emails":[
-    {
-      "type":"other",
-      "value":"peter@gmail.com"
-    }
-  ],
-  "phoneNumbers":[
-    {
-      "type":"other",
-      "value":"+31600000000"
-    }
-  ]
-}
 ```
 
 #### Response
@@ -301,17 +196,11 @@ HTTP/1.1 200 OK
 
 ## Groepen
 
-De rollen in de invite applicatie worden als groepen gepubliceerd naar de Service Provider.
+De rollen in de invite applicatie worden als rollen gepubliceerd naar de Service Provider.
 
 ### Aanmaken groep
 
 Bij het aanmaken van een groep in de invite applicatie wordt deze direct verstuurd naar de instelling.
-
-De `externalId` van een groep is de URN van de rol. Standaard wordt deze
-opgebouwd uit het geconfigureerde URN-prefix, de identifier van de rol en de
-naam van de rol (`{prefix}:{identifier}:{rolnaam}`). Voor rollen afkomstig
-uit SURF Teams wordt de URN van de rol zelf gebruikt, en voor rollen uit het
-CRM `urn:mace:surfnet.nl:surfnet.nl:sab:role:{rolnaam}`.
 
 #### Request
 
@@ -331,11 +220,14 @@ Content-Type: application/json
    "displayName":"WUR Brightspace gastdocent",
    "members":
    [
+      {
+         "value":"{UserID at SP}"
+      }
    ]
 }
 ```
 
-Bij het initieel aanmaken van een groep zal de lijst met `members` leeg zijn.
+Bij het aanmaken van een groep zal de lijst met `members` leeg zijn.
 
 #### Response
 
@@ -356,7 +248,10 @@ Location: https://example.com/v1/Groups/{GroupID at SP}
     },
     "members":
     [
-    ],
+       {
+          "value":"{UserID at SP}"
+       }
+    ]
     "externalId": "urn:collab:group:test.eduid.nl:wur.nl:brightspace:gastdocent",
     "id": "{GroupID at SP}"
 }
@@ -364,12 +259,11 @@ Location: https://example.com/v1/Groups/{GroupID at SP}
 
 De **{GroupID at SP}** uit het antwoord wordt in de Invite-applicatie opgeslagen bij de user, voor toekomstige updates van de groep.
 
-### Update groep (Gebruiker toevoegen/verwijderen of rolnaam wijzigen)
+### Update groep (Gebruiker toevoegen/verwijderen)
 
 Als een gebruiker een uitnodiging accepteert, wordt de gebruiker eerst aangemaakt (met bovenstaand user bericht) als deze nog niet bestond.
 Daarna wordt de gebruiker aan de bestaande groep toegevoegd door het hele groep-object (met alle leden) als update te sturen (PUT)
-of door het verschil door te geven (PATCH). Ook wanneer de naam van de rol is
-gewijzigd, wordt de groep bijgewerkt.
+of door het verschil door te geven (PATCH).
 
 Per applicatie is in te stellen of groep-updates als PUT of PATCH verstuurd worden:
 
@@ -390,16 +284,18 @@ Content-Type: application/json
       "urn:ietf:params:scim:schemas:core:2.0:Group"
    ],
    "externalId": "urn:collab:group:test.eduid.nl:wur.nl:brightspace:gastdocent",
-   "id": "{GroupID at SP}",
+   "id": "{GroupID at SP}"
    "displayName":"WUR Brightspace gastdocent",
    "members":
    [
-       {
-          "value":"{UserID at SP}"
-       },
-       {
-          "value":"{Other UserID at SP}"
-       }
+      {
+         "value":"{UserID at SP}",
+         "externalId": "{Internal UserID at Invite-application}"
+      },
+      {
+         "value":"{Other UserID at SP}",
+         "externalId": "{Other Internal UserID at Invite-application}"
+      }
    ]
 }
 ```
@@ -415,8 +311,10 @@ Content-Length: ...
 Content-Type: application/json
 {
   "schemas" : [ "urn:ietf:params:scim:api:messages:2.0:PatchOp" ],
+  "externalId" : "test.eduid.nl.uva.canvas.guest",
+  "id" : "{GroupID at SP}",
   "Operations" : [ {
-    "op" : "add",
+    "op" : "Add",
     "path" : "members",
     "value" : [ {
       "value" : "{UserID at SP}"
@@ -434,32 +332,14 @@ Content-Length: ...
 Content-Type: application/json
 {
   "schemas" : [ "urn:ietf:params:scim:api:messages:2.0:PatchOp" ],
+  "externalId" : "test.eduid.nl.uva.canvas.guest",
+  "id" : "{GroupID at SP}",
   "Operations" : [ {
-    "op" : "remove",
+    "op" : "Remove",
     "path" : "members",
     "value" : [ {
       "value" : "{UserID at SP}"
     } ]
-  } ]
-}
-```
-
-Als de naam van de rol is gewijzigd, wordt de nieuwe naam doorgegeven met een
-`replace` operatie op `displayName`:
-
-```curl
-PATCH /v1/Groups/{GroupID at SP} HTTP/1.1
-Accept: application/json
-Authorization: Basic dXNlcjpwYXNzd29yZA==
-Host: example.com
-Content-Length: ...
-Content-Type: application/json
-{
-  "schemas" : [ "urn:ietf:params:scim:api:messages:2.0:PatchOp" ],
-  "Operations" : [ {
-    "op" : "replace",
-    "path" : "displayName",
-    "value" : "Nieuwe rolnaam"
   } ]
 }
 ```
@@ -484,12 +364,14 @@ Location: https://example.com/v1/Groups/{GroupID at SP}
     "members":
     [
        {
-          "value":"{UserID at SP}"
+          "value":"{UserID at SP}",
+          "externalId": "{Internal UserID at Invite-application}"
        },
        {
-          "value":"{Other UserID at SP}"
+          "value":"{Other UserID at SP}",
+          "externalId": "{Other Internal UserID at Invite-application}"
        }
-    ],
+    ]
     "externalId": "urn:collab:group:test.eduid.nl:wur.nl:brightspace:gastdocent",
     "id": "{GroupID at SP}"
 }
@@ -502,24 +384,10 @@ Als groepen worden verwijderd vanuit de invite applicatie wordt dit ook doorgege
 #### Request
 
 ```curl
-DELETE /v1/Groups/{GroupID at SP}  HTTP/1.1
+DELETE /groups/{GroupID at SP}  HTTP/1.1
 Accept: application/json
 Authorization: Basic dXNlcjpwYXNzd29yZA==
 Host: example.com
-Content-Length: ...
-Content-Type: application/json
-{
-   "schemas":
-   [
-      "urn:ietf:params:scim:schemas:core:2.0:Group"
-   ],
-   "externalId": "urn:collab:group:test.eduid.nl:wur.nl:brightspace:gastdocent",
-   "id": "{GroupID at SP}",
-   "displayName":"WUR Brightspace gastdocent",
-   "members":
-   [
-   ]
-}
 ```
 
 #### Response

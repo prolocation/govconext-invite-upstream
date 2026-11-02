@@ -4,8 +4,7 @@ import Logo from "./Logo";
 import I18n from "../locale/I18n";
 import {MoreLessText} from "./MoreLessText";
 import {Button, Card, CardType, Chip, ChipType} from "@surfnet/sds";
-import {useNavigate} from "react-router";
-import {isEmpty} from "../utils/Utils.js";
+import {useNavigate} from "react-router-dom";
 
 export const RoleCard = ({
                              application,
@@ -20,7 +19,7 @@ export const RoleCard = ({
             <section className={"user-role-info"}>
                 <p>{application.roleName} {application.authority &&
                     <span>- {I18n.t(`access.${application.authority}`)}</span>}</p>
-                <h3>{(isEmpty(application.applicationName) || application.applicationName === "undefined") ? I18n.t("roles.unknownInManage") : application.applicationName}</h3>
+                <h3>{application.applicationName}</h3>
                 <MoreLessText txt={application.roleDescription} cutOffNumber={80}/>
             </section>
             <div className="launch">

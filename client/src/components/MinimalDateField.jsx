@@ -1,14 +1,15 @@
 import React, {useRef} from "react";
 
 import DatePicker from "react-datepicker";
-import ResetIcon from "@surfnet/sds/icons/functional-icons/close.svg";
-import EditIcon from "@surfnet/sds/icons/functional-icons/edit.svg";
+import {ReactComponent as ResetIcon} from "@surfnet/sds/icons/functional-icons/close.svg";
+import {ReactComponent as EditIcon} from "@surfnet/sds/icons/functional-icons/edit.svg";
+
 import "react-datepicker/dist/react-datepicker.css";
 import "./MinimalDateField.scss"
-import {futureDate, shortDateFromEpoch} from "../utils/Date";
+import {dateFromEpoch, futureDate} from "../utils/Date";
 import {isEmpty} from "../utils/Utils";
 import I18n from "../locale/I18n";
-import {Chip, ChipType, Tooltip} from "@surfnet/sds";
+import {Chip, ChipType} from "@surfnet/sds";
 
 export const MinimalDateField = ({
                                      onChange,
@@ -40,7 +41,7 @@ export const MinimalDateField = ({
                 type={ChipType.Status_error}
                 label={I18n.t("invitations.statuses.expired")}/>}
             {!expired && <span className="value">
-                {!isEmpty(value) ? shortDateFromEpoch(value, false) : I18n.t("roles.noEndDate")}
+                {!isEmpty(value) ? dateFromEpoch(value, false) : I18n.t("roles.noEndDate")}
             </span>}
             <DatePicker
                 ref={inputRef}
@@ -63,17 +64,11 @@ export const MinimalDateField = ({
             {(!isEmpty(value) && allowNull) &&
                 <div className="icon reset-icon left"
                      onClick={() => onChange(null)}>
-                    <Tooltip standalone={true}
-                             children={<ResetIcon/>}
-                             tip={I18n.t("forms.reset")}/>
-
+                    <ResetIcon/>
                 </div>}
             <div className={`icon edit-icon ${isEmpty(value) || !allowNull ? "left" : ""}`}
                  onClick={toggle}>
-                <Tooltip standalone={true}
-                         children={<EditIcon/>}
-                         tip={I18n.t("forms.edit")}/>
-
+                <EditIcon/>
             </div>
         </div>
     );

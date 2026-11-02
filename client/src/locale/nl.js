@@ -38,10 +38,7 @@ const nl = {
             access: "Invite",
             help: "Help",
             profile: "Profiel",
-            tokens: "Tokens",
-            logout: "Uitloggen",
-            audit: "Rol historie",
-            colleagues: "Instellingsrollen"
+            logout: "Uitloggen"
         },
     },
     tabs: {
@@ -65,8 +62,7 @@ const nl = {
         allPendingInvitations: "Open uitnodigingen",
         acceptedInvitations: "Geaccepteerd",
         performanceSeed: "Seed",
-        seed: "Seed",
-        login: "Login"
+        seed: "Seed"
     },
     home: {
         access: "SURFconext Invite",
@@ -81,10 +77,9 @@ const nl = {
         },
     },
     access: {
-        SUPER_USER: "Superuser",
-        INSTITUTION_ADMIN: "Instellingsadmin",
-        APPLICATION_MANAGER: "Applicatie-manager",
-        MANAGER: "Rolmanager",
+        SUPER_USER: "Super User",
+        INSTITUTION_ADMIN: "Instellingsmanager",
+        MANAGER: "Manager",
         INVITER: "Uitnodiger",
         GUEST: "Gebruiker",
         "No member": "Geen lid"
@@ -96,13 +91,11 @@ const nl = {
         name_email: "Naam / e-mail",
         name: "Naam",
         email: "E-mail",
-        highestAuthority: "Functie",
+        highestAuthority: "Rol",
         createdAt: "Aangemaakt op",
         schacHomeOrganization: "Instelling",
         lastActivity: "Laatst actief",
         organizationGUID: "Organisatie GUID",
-        crmOrganisation: "CRM Organisatie",
-        crmContactId: "CRM Contact ID",
         eduPersonPrincipalName: "EPPN",
         sub: "Sub",
         singleUser: "gebruiker",
@@ -113,11 +106,8 @@ const nl = {
         roles: "Rollen",
         applications: "Applicaties",
         noRolesInfo: "Je hebt geen rollen (je bent een super-user)",
-        noRolesInstitutionAdmin: "Je bent instellingsadmin, maar hebt nog geen rollen (maar je hebt wel toegang tot je applicaties)",
-        noRolesInstitutionAdminOther: "{{name}} is een instellingsadmin, maar heeft nog geen rollen (maar wel toegang tot applicaties)",
-        noRolesNoApplicationsInstitutionAdmin: "Je bent instellingsadmin, maar je hebt geen rollen en je instelling heeft blijkbaar ook geen toegang tot applicaties.",
-        noRolesInfoApplicationManager: "Je hebt geen rollen. Je bent een applicatie manager en je hebt toegang tot applicaties",
-        noRolesInfoApplicationManagerOther: "{{name}} heeft geen  rollen, maar is een applicatie manager en heeft toegang tot applicaties",
+        noRolesInstitutionAdmin: "Je bent instellingsmanager, maar hebt nog geen rollen (maar je hebt wel toegang tot je applicaties)",
+        noRolesNoApplicationsInstitutionAdmin: "Je bent instellingsmanager, maar je hebt geen rollen en je instelling heeft blijkbaar ook geen toegang tot applicaties.",
         guestRoleOnly: "Je bent geen admin. Ben je op zoek naar de <a href='{{welcomeUrl}}'>applicaties waar je toegang to hebt</a>?",
         rolesInfo: "Je hebt de volgende rollen",
         applicationsInfo: "Je hebt toegang tot de volgende applicaties",
@@ -133,23 +123,14 @@ const nl = {
         authority: "Autoriteit",
         endDate: "Einddatum",
         expiryDays: "Verloopdagen",
-        roleExpiryTooltip: "Sorteer op rollen, om te zien welke rol het eerst zal verlopen",
-        deleteFlash: "Gebruiker {{name}} is verwijderd",
-        deleteConfirmation: "Weet je heel zeker dat je gebruiker {{name}} wilt verwijderen? Er is geen undo functionaliteit.",
-        institutionAdmins: "Je collega-instellingsbeheerders zijn:",
-        onlyInstitutionAdmins: "Je bent de enige instellingsbeheerder binnen je organisatie",
-        removeInstitutionAdminConfirmation: "Weet je zeker dat je de beheerdersrechten voor de instelling wilt intrekken bij {{userName}}?",
-        removeInstitutionAdminFlash: "De beheerdersrechten voor de instelling zijn ingetrokken bij {{userName}}",
+        roleExpiryTooltip: "Sorteer op rollen, om te zien welke rol het eerst zal verlopen"
     },
     role: {
         copyUrn: "Copy urn",
-        userInfo: "{{nbr}} leden & verloopt {{period}}",
+        userInfo: "{{nbr}} leden & geldig voor {{valid}} dagen",
         roleInfo: "Rol geldig voor <strong>{{days}} dagen</strong>",
         roleInfoNoEndDate: "Rol heeft <strong>geen einddatum</strong>",
-        contactAdmin: "Contact rolmanager(s)",
-        institutionAdmin: "Institution admins: {{names}}",
-        noInstitutionAdmin: "Er zijn geen instellings-admins voor deze rol",
-        crmRoleImmutable: "CRM rollen zijn read-only"
+        contactAdmin: "Contact manager(s)"
     },
     roles: {
         title: "Toegangsrollen",
@@ -166,9 +147,7 @@ const nl = {
         namePlaceHolder: "Naam van de rol",
         shortName: "Korte naam",
         organizationGUID: "Organization GUID",
-        organizationGUIDValue: "Instelling GUID: {{guid}}",
-        identityProvider: "Identity provider",
-        identityProviderPlaceholder: "Zoek identity providers...",
+        identityProvider: "Identity provider: {{name}}",
         landingPage: "(Aangepaste) landingspagina",
         userRoleCount: "# Gebruikers",
         landingPagePlaceHolder: "https://landingspagina.nl",
@@ -179,7 +158,6 @@ const nl = {
         yourRole: "Jouw rol",
         description: "Omschrijving",
         descriptionPlaceHolder: "Omschrijving van het doel van de rol",
-        isCrm: "mijnSURF rol",
         noResults: "Geen rollen gevonden",
         noMember: "Geen lid",
         searchPlaceHolder: "Zoek rollen...",
@@ -207,9 +185,7 @@ const nl = {
             info: "De volgende gebruikers verliezen toegang tot deze rol:",
             userInfo: "{{name}} ({{authority}}), laatste activiteit {{lastActivity}}",
             andMore: "En nog {{nbr}} meer.. Bekijk de lijst van huidige gebruikers voor meer details."
-        },
-        noProvisioning: "Gebruikers die toegevoegd worden aan deze rol, hebben niet gelijk toegang tot deze applicatie. Zie de <a href=' https://servicedesk.surf.nl/wiki/spaces/IAM/pages/128910179/Applicatie+aansluiten+op+SURFconext+Invite' target='_blank'>wiki</a> voor meer informatie.",
-        userRolesPresent: "Je mag deze rol niet verwijderen, omdat {{nbr}} gebruiker(s) deze rol hebben. Je moet deze gebruikers eerst verwijderen uit deze rol."
+        }
     },
     applications: {
         title: "Toegangsrollen voor deze applicatie ({{nbr}})",
@@ -261,15 +237,9 @@ const nl = {
         open: "Open",
         accepted: "Geaccepteerd",
         expired: "Verlopen",
-        mine: "Mijn open uitnodigingen",
         enforceEmailEquality: "E-mailadres moet overeenkomen",
         eduIDOnly: "Uitsluitend eduID",
-        requestedAuthnContext: "ACR waarde",
-        requestedAuthnContextPlaceHolder: "Kies een ACR waarde voor de gebruiker stepup...",
-        requestedAuthnContextWarning: "Om de geselecteerde ACR ook af te dwingen op de applicatie(s) {{applications}} " +
-            ", is aanvullende configuratie nodig voor de eduID-identiteitsprovider. " +
-            "Neem contact op met <a href=\"mailto: support@surfconext.nl\">support@surfconext.nl</a> om deze wijziging aan te vragen.",
-        new: "Nodig rolmanager of uitnodiger uit",
+        new: "Nodig manager of uitnodiger uit",
         newInvitation: "Nodig uitnodiger uit",
         newInvite: "Nieuwe uitnodiging",
         newGuest: "Gebruiker uitnodigen",
@@ -278,27 +248,16 @@ const nl = {
         inviteesPlaceholder: "E-mailadressen genodigden",
         requiredEmail: "Geef minimaal 1 e-mailadres op",
         requiredRole: "Minimaal 1 rol is benodigd voor een uitnodiging",
-        requiredApplication: "Minimaal 1 applicatie  is benodigd voor een uitnodiging voor een applicatie manager invitation",
         requiredOrganizationGUID: "Een valide Organisatie GUID is verplicht voor een instellingsadmin uitnodiging",
         intendedAuthority: "Autoriteit",
         roles: "Rollen",
         inviterRoles: "Selecteer de rollen voor de nieuwe uitnodiging",
-        rolesPlaceHolder: "Kies één of meer rollen",
-        rolesPlaceHolderLoading: "Wacht totdat alle rollen zijn geladen...",
-        applications: "Applicaties",
-        applicationsPlaceHolder: "Kies één of meer applicaties",
-        applicationsPlaceHolderLoading: "Wacht totdat alle applicaties zijn geladen...",
+        rolesPlaceHolder: "Kies een of meer rollen",
         expiryDate: "Geldig tot",
         acceptedAt: "Datum geaccepteeerd",
         roleExpiryDate: "Verloopdatum rol",
         roleExpiryDateQuestion: "Zet een specifieke verloopdatum voor de rol",
         roleExpiryDateInfo: "Deze rol wordt verwijderd van de gebruiker {{expiry}}",
-        roleExpiryDateInfoOn: "Deze rol wordt verwijderd van de gebruiker op {{date}}",
-        roleExpiryDateInfoDefault: "Default wordt deze rol verwijderd van de gebruiker na 365 dagen",
-        removeRole: "Verwijder rol",
-        after: "Na",
-        on: "Op",
-        days: "dagen",
         customInviterDisplayNameQuestion: "Zet een specifieke naam voor de uitnodiger",
         inviterDisplayName: "Specifieke naam uitnodiger voor in de uitnodiging",
         inviterDisplayNamePlaceholder: "Bijv. werken@thuis.universiteit.nl",
@@ -313,7 +272,6 @@ const nl = {
         messagePlaceholder: "Voeg een persoonlijk bericht toe aan de uitnodiging",
         invite: "Stuur uitnodiging",
         guestRoleIncluded: "Voeg toe als gebruiker?",
-        notifyInviter: "Melding bij acceptatie?",
         invalidEmails: "Ongeldig e-mailadres verwijderd: {{emails}}.",
         createFlash: "Uitnodiging is verstuurd",
         delete: "Intrekken",
@@ -348,9 +306,7 @@ const nl = {
         no: "Nee",
         ok: "Oké",
         or: "of ",
-        fixed: "of zet een vaste datum",
         edit: "Bewerken",
-        reset: "Reset",
         cancel: "Annuleren",
         save: "Opslaan",
         specificDate: "Zet specifieke datum",
@@ -407,8 +363,7 @@ const nl = {
         login: "Inloggen",
         loginWithSub: "Inloggen",
         emailMismatch: "De uitnodiger heeft aangegeven dat je de uitnodiging dient te accepteren met e-mailadres {{email}}, " +
-            "maar je bent ingelogd met een account met een ander e-mailadres. Log opnieuw in met een ander account.",
-        crmOrganisationMismatch: "Je bent al lid van een andere CRM-organisatie. Sluit je browser en accepteer de uitnodiging met een ander account.<br/><br/> Bericht van de server: {{message}}"
+            "maar je bent ingelogd met een account met een ander e-mailadres. Log opnieuw in met een ander account."
     },
     inviter: {
         welcome: "Welkom, {{name}}",
@@ -420,7 +375,7 @@ const nl = {
         history: "Geschiedenis van uitnodigingen"
     },
     institutionAdmin: {
-        welcome: "Welkom instellingsadmin van {{name}}! Je kan nu je eerste rol aanmaken en rolmanagers daarvoor uitnodigen.",
+        welcome: "Welkom instellingsadmin van {{name}}! Je kan nu je eerste rol aanmaken en managers daarvoor uitnodigen.",
         create: "Rol aanmaken"
     },
     tokens: {
@@ -445,8 +400,6 @@ const nl = {
         createFlash: "API-token is aangemaakt",
         submit: "Opslaan",
         required: "Een omschrijving is verplicht voor een API-token",
-        userTokens: "Je persoonlijke API-tokens",
-        owner: "User"
     },
     tooltips: {
         userIcon: "Gebruiker {{name}} geprovisiond op {{createdAt}}, laatst actief op {{lastActivity}}",
@@ -456,14 +409,11 @@ const nl = {
         invitationIcon: "Uitnodiging aan {{email}} verstuurd op {{createdAt}} met verloopdatum {{expiryDate}}",
         roleShortName: "Een unieke korte naam voor de rol binnen een provisioning. Wordt gebruikt in de urn, daarom zijn niet alle tekens toegestaan.",
         organizationGUID: "The Manage organizational identifier to scope the visibility of roles of the institution admin. Only specify a value if you are creating or editing this role on behalf of an institution admin",
-        roleIdentityProvider: "De IdP om de scope van de rollen van de institution admin te bepalen.",
-        invitationIdentityProvider: "The IdP determines the organization GUID of the new Institution Admin when the invitation is accepted",
         roleUrn: "De urn van deze rol. Deze is gebaseerd op de opgeschoonde naam en de rol-identifier. Hij wordt gebruikt als de unieke globale identifier van deze rol en daarom zijn niet alle tekens toegestaan.",
         manageService: "De vereiste applicatie uit SURFconext, die optioneel een provisioning heeft.",
         defaultExpiryDays: "Het standaardaantal dagen waarna de rol verloopt, gerekend vanaf het moment dat de gebruiker de uitnodiging voor de rol accepteert.",
         enforceEmailEqualityTooltip: "Indien ingeschakeld moet de genodigde de uitnodiging accepteren met een account dat hetzelfde e-mailadres voert als waarheen deze uitnodiging gestuurd is",
         eduIDOnlyTooltip: "Indien ingeschakeld moeten de genodigden eduID gebruiken om in te loggen bij het accepteren",
-        requestedAuthnContextTooltip: "De gebruiker wordt gedwongen de authenticatie te verhogen bij het inloggen met eduID met de opgegeven ACR",
         roleExpiryDateTooltip: "De einddatum van deze rol. Na deze datum wordt de rol verwijderd bij de gebruiker.",
         expiryDateTooltip: "De datum waarop deze uitnodiging verloopt",
         inviterDisplayName: "De specifieke naam van de uitnodiger zal worden getoond in de uitnodiging.<br><br>Standaard tonen we de naam van de daadwerkelijke uitnodiger.",
@@ -479,9 +429,7 @@ const nl = {
         removeUserRole: "Verwijder alle geselecteerde rollen",
         removeOneUserRole: "Verwijder deze rol",
         guestRoleIncludedTooltip: "Wil je dat de uitgenodigden ook gebruiker worden als ze de uitnodiging accepteren?",
-        notifyInviterTooltip: "Wil je een e-mail ontvangen wanneer de uitnodiging is geaccepteerd?",
         expiredUserRole: "Deze rol gaat verlopen binnen een maand",
-        applicationsTooltip: "De uitgenodigde gebruikers worden applicatiebeheerder nadat ze de uitnodiging hebben geaccepteerd.",
     },
     confirmationDialog: {
         title: "Bevestig",
@@ -491,7 +439,6 @@ const nl = {
         confirm: "Bevestig",
         ok: "OK",
         cancel: "Annuleer",
-        notAllowed: "Niet toegestaan"
     },
     footer: {
         terms: "Gebruiksvoorwaarden",
@@ -575,37 +522,7 @@ const nl = {
         title: "Roles to be expired the next month",
         searchPlaceHolder: "Zoek...",
         noResults: "Yeah, no user-roles to be expired within one month"
-    },
-    requestedAuthnContext: {
-        EduIDLinkedInstitution: "EduID gekoppelde instelling",
-        EduIDValidatedName: "EduID gevalideerde naam",
-        ValidateNamesExternal: "EduID gevalideerde naam bij een externe (niet institutioneel) bron",
-        EduIDRequireStudentAffiliation: "EduID verplicht student affiliation",
-        TransparentAuthnContext: "Application levert zelf ACR waarde"
-    },
-    userRoleAudit: {
-        header: "Audittrail",
-        info: "Alle wijzigingen aan rollen die door je organisatie zijn aangemaakt",
-        email: "Gebruiker",
-        roleName: "Rol",
-        action: "Actie",
-        actions: {
-            ADD: "Toegevoegd",
-            DELETE: "Verwijderd",
-            UPDATE: "Bijgewerkt"
-        },
-        authority: "Autoriteit",
-        endDate: "Einddatum",
-        createdAt: "Aangemaakt",
-        searchPlaceHolder: "Zoeken naar rolgeschiedenis",
-        title: "Het auditspoor van rollen",
-        rolePlaceHolder: "Filteren op rol",
-    },
-    institutionAdmins: {
-        title: "Beheerders van de instelling",
-        searchPlaceHolder: "Zoeken..."
     }
 }
 
 export default nl;
-

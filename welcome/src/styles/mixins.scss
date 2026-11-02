@@ -1,4 +1,4 @@
-@use "../styles/vars";
+@import "../styles/vars";
 
 
 @mixin input-field {
@@ -12,11 +12,11 @@
 }
 
 @mixin page {
-    max-width: vars.$medium;
+    max-width: $medium;
     width: 100%;
     margin: 0 auto;
 
-    @media (max-width: vars.$medium) {
+    @media (max-width: $medium) {
         padding: 0 15px;
     }
 
@@ -60,7 +60,7 @@
         }
 
     }
-    @media (max-width: vars.$medium) {
+    @media (max-width: $medium) {
         grid-template-columns: [first] 1fr;
     }
 }

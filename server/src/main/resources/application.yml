@@ -1,6 +1,23 @@
 ---
+logging:
+  level:
+    root: WARN
+    com.zaxxer.hikari: ERROR
+    org.mariadb.jdbc.message.server: ERROR
+    org.springframework.security: INFO
+    access: DEBUG
+#    sql: DEBUG
+#    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+#    org.hibernate.orm.jdbc.bind: TRACE
+  threshold:
+#    console: TRACE
+    console: WARN
+
 server:
   port: 8888
+  error:
+    path: "/error"
+    include-message: always
   forward-headers-strategy: framework
   servlet:
     session:
@@ -13,16 +30,11 @@ spring:
   session:
     jdbc:
       cleanup-cron: "-"
-      initialize-schema: never
+      initialize-schema: always
     store-type: jdbc
     timeout: 8h
   mvc:
     log-request-details: false
-  jackson:
-    use-jackson2-defaults: true
-  http:
-    converters:
-      preferred-json-mapper: jackson2
   security:
     oauth2:
       client:
@@ -44,9 +56,7 @@ spring:
   jpa:
     properties:
       hibernate:
-        query:
-          native:
-            prefer_jdbc_datetime_types: true
+        naming-strategy: org.hibernate.cfg.ImprovedNamingStrategy
     open-in-view: false
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
@@ -59,10 +69,6 @@ spring:
   mail:
     host: localhost
     port: 1025
-  web:
-    error:
-      path: "/error"
-      include-message: always
 
 crypto:
   development-mode: True
@@ -72,24 +78,15 @@ crypto:
   private-key-location: classpath:/private_key_pkcs8.pem
 
 cron:
-  delay_min: 200000
-  delay_max: 1200001
-  user-cleaner-cron: "PT30M"
-  user-cleaner-lock-at-least-for: "PT5M"
-  user-cleaner-lock-at-most-for: "PT28M"
+  node-cron-job-responsible: true
+  user-cleaner-expression: "0 0/30 * * * *"
   last-activity-duration-days: 1000
-  role-expiration-notifier-cron: "PT30M"
+  role-expiration-notifier-expression: "0 0/30 * * * *"
   # Set to -1 to suppress role expiry notifications
   role-expiration-notifier-duration-days: 5
-  role-expiration-notifier-lock-at-least-for: "PT5M"
-  role-expiration-notifier-lock-at-most-for: "PT28M"
   metadata-resolver-initial-delay-milliseconds: 1
   metadata-resolver-fixed-rate-milliseconds: 86_400_000
   metadata-resolver-url: "classpath:/metadata/idps-metadata.xml"
-  # A value of 0 means no logs will be deleted
-  purge-audit-log-days: 365
-  # A value of 0 means no invitations will be deleted
-  purge-expired-invitations-days: 365
 
 myconext:
   uri: "https://login.test2.eduid.nl/myconext/api/invite/provision-eduid"
@@ -103,18 +100,9 @@ oidcng:
   resource-server-secret: secret
   base-url: http://localhost:8888
 
-crm:
-  api-key-header: secret
-  collab-person-prefix: "urn:collab:person"
-  inviter-name: "SURF CRM"
-  # The crm-config-resource can an absolute file path, e.g. file:///opt/openconext/invite/crm_config.json or
-  # a classpath entry
-  crm-config-resource: "classpath:/crm/crm_config.json"
-
 super-admin:
   users:
     - "urn:collab:person:example.com:admin"
-    - "urn:collab:person:example.com:super"
 
 institution-admin:
   entitlement: "urn:mace:surfnet.nl:surfnet.nl:sab:role:SURFconextverantwoordelijke"
@@ -135,24 +123,9 @@ config:
   past-date-allowed: True
   performance-seed-allowed: True
   eduid-idp-schac-home-organization: "test.eduid.nl"
-  languages: "nl, en"
-  environment: ${gui.disclaimer.content}
-  acr-requirements:
-    - key: EduIDLinkedInstitution
-      url: "https://eduid.nl/trust/linked-institution"
-    - key: EduIDValidatedName
-      url: "https://eduid.nl/trust/validate-names"
-    - key: ValidateNamesExternal
-      url: "https://eduid.nl/trust/validate-names-external"
-    - key: EduIDRequireStudentAffiliation
-      url: "https://eduid.nl/trust/affiliation-student"
-    - key: TransparentAuthnContext
-      url: "transparent_authn_context"
 
 feature:
   enable-performance-seed: False
-  allow-for-eduid-only-enforcement-for-non-guests: False
-  invite-accept-add-login_hint: True
 
 # We don't encode in-memory passwords, so we need to prefix them with {noop}
 external-api-configuration:
@@ -169,23 +142,10 @@ external-api-configuration:
       password: "secret"
       scopes:
         - attribute_aggregation
-        - crm
-    - username: pdp
-      password: "secret"
-      scopes:
-        - crm
-    - username: idp_dashboard
-      password: "secret"
-      scopes:
-        - crm
     - username: lifecycle
       password: "secret"
       scopes:
         - lifecycle
-    - username: internal
-      password: "secret"
-      scopes:
-        - actuator
     - username: profile
       password: "secret"
       scopes:
@@ -193,25 +153,14 @@ external-api-configuration:
     - username: sp_dashboard
       displayName: "SP Dashboard"
       password: "secret"
-      organizationGUIDFallback: "ad93daef-0911-e511-80d0-005056956c1a"
       scopes:
         - sp_dashboard
       applications:
         - manageId: "4"
           manageType: SAML20_SP
-    - username: access
-      displayName: "Access"
-      password: "secret"
-      organizationGUIDFallback: "5ede9c9b-3bbc-ea11-90fe-0050569571ea"
-      scopes:
-        - access
-      applications:
-        - manageId: "6"
-          manageType: OIDC10_RP
     - username: sp_dashboard_local_dev_mode
       displayName: "SP Dashboard"
       password: "secret"
-      organizationGUIDFallback: "ad93daef-0911-e511-80d0-005056956c1a"
       scopes:
         - sp_dashboard
       applications:
@@ -238,8 +187,8 @@ email:
 # configure real users / passwords and test against those. See server/src/main/java/access/manage/ManageConf.java
 # and server/src/main/java/access/manage/LocalManage.java to see how it works.
 manage:
-  enabled: True
-#  enabled: False
+#  enabled: True
+  enabled: False
   url: "https://manage.test2.surfconext.nl"
   user: invite
   password: secret
@@ -249,16 +198,10 @@ manage:
 #  staticManageDirectory: file:///usr/local/etc/manage
 
 springdoc:
-  pathsToMatch:
-    - "/api/external/v1/**"
-    - "/crm/profile"
-    - "/api/profile"
-    - "/crm/api/v1/**"
+  pathsToMatch: "/api/external/v1/**"
   api-docs:
-    enabled: true
     path: "/ui/api-docs"
   swagger-ui:
-    enabled: true
     path: "/ui/api-ui.html"
     operationsSorter: method
     oauth:
@@ -273,20 +216,18 @@ management:
   endpoints:
     web:
       exposure:
-        include: "health,info,prometheus"
+        include: "health,info,mappings,metrics"
       base-path: "/internal"
   endpoint:
     info:
-      access: unrestricted
+      enabled: true
     health:
-      access: unrestricted
-      show-details: when_authorized
-    prometheus:
-      access: unrestricted
+      enabled: true
+      show-details: always
     mappings:
-      access: none
+      enabled: true
     metrics:
-      access: unrestricted
+      enabled: false
   info:
     git:
       mode: full

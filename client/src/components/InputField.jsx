@@ -1,12 +1,12 @@
 import React from "react";
-import ArrowRight from "@surfnet/sds/icons/functional-icons/arrow-right-2.svg";
+import {ReactComponent as ArrowRight} from "@surfnet/sds/icons/functional-icons/arrow-right-2.svg";
 
 import {Tooltip} from "@surfnet/sds";
 import "./InputField.scss";
 import {isEmpty} from "../utils/Utils";
 import ClipBoardCopy from "./ClipBoardCopy";
 import {validUrlRegExp} from "../validations/regExps";
-import {useNavigate} from "react-router";
+import {useNavigate} from "react-router-dom";
 
 export default function InputField({
                                        onChange,

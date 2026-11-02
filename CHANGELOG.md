@@ -1,3 +1,4 @@
+
 # Change Log
 
 All notable changes to this project will be documented in this file.
@@ -5,214 +6,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## 1.2.0
-
-- Remove IdentityProvider for non-super-admins (see [#755](https://github.com/OpenConext/OpenConext-Invite/issues/755))
-- Allow disabling of login_hint (see [#754](https://github.com/OpenConext/OpenConext-Invite/issues/754))
-- Hide “Add inviter” / “Add role manager” button for users without permission (see [#750](https://github.com/OpenConext/OpenConext-Invite/issues/750))
-- List of applications for institution admin in Role form (see [#727](https://github.com/OpenConext/OpenConext-Invite/issues/727))
-- Read-only info CRM rol eigenschappen (see [#735](https://github.com/OpenConext/OpenConext-Invite/issues/735))
-- Move internalPlaceholderIdentifier to externalId in SCIM / POST Users (see [#771](https://github.com/OpenConext/OpenConext-Invite/issues/771))
-- Log ip, username and endpoint on "Access Denied" (see [#713](https://github.com/OpenConext/OpenConext-Invite/issues/713))
-- Remove external links from mails (see [#612](https://github.com/OpenConext/OpenConext-Invite/issues/612))
-- Introduce After/On expiration selection option when sending invite (see [#610](https://github.com/OpenConext/OpenConext-Invite/issues/610))
-- Add "Application Manager" Role (see [#693](https://github.com/OpenConext/OpenConext-Invite/issues/693))
-- Add Application Manager (see [#693](https://github.com/OpenConext/OpenConext-Invite/issues/693))
-- Make acr's configurable (see [#722](https://github.com/OpenConext/OpenConext-Invite/issues/722))
-- Migrated to Spring Boot 4.1.0 (see [#722](https://github.com/OpenConext/OpenConext-Invite/issues/775))
-
-## 1.1.16
-
-- Fix for Attribute Aggregation id's
-
-## 1.1.15
-
-- Fix for duplicate CRM roles
-
-## 1.1.14
-
-- Only delete User in CRM Delete endpoint, if there are no native Invite roles anymore for this user
-
-## 1.1.13
-
-- Added SuperUser endpoint to fix the missing landing pages in Application Usages
-
-## 1.1.12
-
-- Fix: Add CRM info to existing Invite users
-
-## 1.1.11
-
-- Fix: CRM import also set the organisation for existing Invite users
-
-## 1.1.10
-
-- Added debug logging for CRM endpoints
-- Fix: in attribute aggregation for authorization roles ensure the role is a valid CRM role
-- Fix: Duplicate key exception for CRM invitations
-- Fix: Institution admin application search
-- Fix: CRM delete API
-- Fix: Continue when SCIM update of personal details produces an error
-
-## 1.1.5
-
-- Fix: Missing translation
-- Update dependencies
-
-## 1.1.4
-
-- Fix: Locking for cron jobs on multi-master databases
-- Fix: Institute logo display in gmail
-
-## 1.1.1
-
-- Fix: eduID only invitations for managers and inviters
-- Feature: Display audit trail for Institution Admins
-- Feature: Clean up expired invitations
-- Fix: Locking for cron jobs on multi-master databases
-
-## 1.1.0
-
-- Feature: Add CRM interface to directly create application-roles and invite users, triggers from an external CRM system
-- Fix: Role list display in invite creation grows with content
-- Improvement: Role overview improvements
-- Improvement: Show acvanced options to inviters
-- Improvement: API token documentation in SwaggerUI
-- Improvement: Feature toggle for `eduID-only` invite for role managers and inviters
-
-## 1.0.5
-
-- Fix: Repair SCIM delete messages for users
-- Improvement: Translations and minor UI updates
-- Improvement: Extra logging for provisioning
-
-## 1.0.4
-
-- Do nog log missing translation on production enviroment
-- Less logging for missing translations
-
-## 1.0.3
-
-- Fix: remove trailing slash in `scim_url`
-- Fix: send PATCH request for change of displayName of Group (e.g. the name of the Role)
-- Fix: accept invitation in same window as where the invitation was send, now works
-- Change: Only allow the deletion of a Role when there are no users with that role or if the user is a super user
-- Improvement: cronjob database locks to work in clusterd enviroment
-- Fix: SCIM delete messageses were not always sent
-- Fix: Accepting invite in the same browser session that sent the invite
-- Change: SCIM Patch opeartions now follow rfc7644 and use `add`, `remove`, or `replace` (instead of `Add` and `Remove`)
-
-## 1.0.2
-
-- Fix: ensure that when a user is provisioned with eduID as the identifier, invite first calls the eduID
-  provisioning service to obtain an institutional eduID, and then uses that eduID instead of the user’s original eduID
-
-## 1.0.1
-
-- Fix: eduID only role
-- fix: Adding application to form when sreating a role from the application page
-- Fix: JS issues on create invitation page
-- Fix: idpScoping for long list of IdP's
-- Fix: javascipt issues on search
-- Fix: Reuireing a validated eduID
-
-## 1.0.0
-
-- The `scim_user_identifier` from Manage determines the `userName` (and not primarily the `externalId`)
-- Endpoint for Access to retrieve roles
-- Add the option to only accept an invitation with a validated account
-- Fix scim_user_provisioning_only
-- Fix for duplicate table errors
-- Move from cronjob master to database locks
-- Improve logging
-- Display visual indication of loading (many) roles for new invite
-- Make organization_guid required for all Roles #591
-- Fix for broken impersonation – race condition
-- Return to the correct index
-- Allow extra (e.g., Portuguese) translations
-- Allow defining a Role fixed end date
-- Fix for reset / edit function in user-roles #554
-- Bugfix for scoping authorities in new invitations
-- Make organization_guid required for all Roles
-
-## 0.0.37
-
-- Bugfix for required short_name in update Role
-- Fix searching for short strings
-- IFix Invitation form is not right if user also has Guest authority on that role
-- Add users' institution identifier during invite creation
-- Fix Role expiration shorter than the defined role-expiration-notifier-duration-days variable
-- Fix Incorrect name for invitations when using API keys
-- Improve the 'hint' descriptions in the 'advanced options'
-- Allow more characters in shortname and URN
-- Limit WAYF to IdP's connected to application
-- Remove externalId from SCIM /Group PATCH operations
-
-## 0.0.36
-
-- UI: Consistent Date Formatting
-- Fix: Don't stop cleanup job on remote error
-- Fix: Inviter Authority: Invite interface shows too many roles, including ones with only Guest Access
-- Handle Role expiration shorter than the defined role-expiration-notifier-duration-days variable correctly
-- API: A POST to /api/external/v1/invitations should not allow to specify an id or urn
-
-## 0.0.35
-
-- Bugfix for duplicate tab's as superuser
-- Fix Leading slash for `internal/**` in spring-security
-- Warn when creating a new role if an app can't provision yet
-- Add Prometheus endpoint for easy statistics
-
-## 0.0.34
-
-- Added more logging to manage API calls and improve stability
-- Optimized table size on full screen view for better readability
-- Invitation system now recognizes multiple Identity Providers (IdPs)
-- Fixed bug allowing users to log in by pressing 'Enter' on the splash screen
-- Applied a consistent naming convention in the application hierarchy
-- Fixed searching for roles that contain a hyphen (-)
-- Invitation applications no longer differentiate between individual IdPs of a single institution
-- Implemented easy statistics via Prometheus for performance monitoring
-- Store audit trail for role memberschips
-- Allow creation of smaller scoped API access tokens
-- Allow searching for institution name
-- Allow extending invite validity end-date
-- Institution admins can now be invited for roles outside their own organisation
-- Super-users can delete users now
-- Upgrade spring-security
-
-## 0.0.33
-
-- Lower mobile breakpoint to avoid mobile view on half of the desktop size
-- Bugfix for accepting an invitation created by remote API user
-
-## 0.0.32
-
-- Bugfix for not redirecting to invitation
-- Bugfix for scim bearer token
-- Bugfix for accepting invitation in client
-- Add active and phoneNumers to SCIM messages
-- Handle empty SCIM provisioning response
-- Fix scim_user_provisioning_only function
-- Improve error log on missing ID in SCIM message
-- Add more logging
-- API endpoint '/v2/users' renamed to '/v2/Users', /groups to /Groups
-- Remove identifiers from SCIM patch request
-
-## 0.0.31
-
-- Avoid deadlocks when trying to create roles with the same subset of applications under heavy load
-
-## 0.0.30
-
-- Use the new CompoundKeyStore for secrets in Manage
-
-## 0.0.29
-
-- Add more logging
-- Fix plain text invitation email link
-- Return to role instead of index after deleting people
-- Make authority names more consistent
+## Unreleased - YYYY-MM-DD
 
 ## 0.0.28
 
@@ -256,10 +50,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add API endpoints for Openconext-spdashboard integration
 - Add API endpoints for Openconext-myconext integration
 - Fixes https://github.com/OpenConext/OpenConext-Invite/issues/307,
-  https://github.com/OpenConext/OpenConext-Invite/issues/312,
-  https://github.com/OpenConext/OpenConext-Invite/issues/320,
-  https://github.com/OpenConext/OpenConext-Invite/issues/240,
-  https://github.com/OpenConext/OpenConext-Invite/issues/310
+https://github.com/OpenConext/OpenConext-Invite/issues/312,
+https://github.com/OpenConext/OpenConext-Invite/issues/320,
+https://github.com/OpenConext/OpenConext-Invite/issues/240,
+https://github.com/OpenConext/OpenConext-Invite/issues/310
 
 ## 0.0.20 2024-09-13
 
@@ -277,29 +71,29 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Allow searching for specific role types in users
 - Show correct landingpage for roles in UI and API
 - Fixes issues https://github.com/OpenConext/OpenConext-Invite/issues/231,
-  https://github.com/OpenConext/OpenConext-Invite/issues/302,
-  https://github.com/OpenConext/OpenConext-Invite/issues/240,
-  https://github.com/OpenConext/OpenConext-Invite/issues/298,
-  https://github.com/OpenConext/OpenConext-Invite/issues/296,
-  https://github.com/OpenConext/OpenConext-Invite/issues/295,
-  https://github.com/OpenConext/OpenConext-Invite/issues/297,
-  https://github.com/OpenConext/OpenConext-Invite/issues/239,
-  https://github.com/OpenConext/OpenConext-Invite/issues/239,
-  https://github.com/OpenConext/OpenConext-Invite/issues/241,
-  https://github.com/OpenConext/OpenConext-Invite/issues/241,
-  https://github.com/OpenConext/OpenConext-Invite/issues/293,
-  https://github.com/OpenConext/OpenConext-Invite/issues/235,
-  https://github.com/OpenConext/OpenConext-Invite/issues/235,
-  https://github.com/OpenConext/OpenConext-Invite/issues/234,
-  https://github.com/OpenConext/OpenConext-Invite/issues/232,
-  https://github.com/OpenConext/OpenConext-Invite/issues/232,
-  https://github.com/OpenConext/OpenConext-Invite/issues/233,
-  https://github.com/OpenConext/OpenConext-Invite/issues/233,
-  https://github.com/OpenConext/OpenConext-Invite/issues/231,
-  https://github.com/OpenConext/OpenConext-Invite/issues/230,
-  https://github.com/OpenConext/OpenConext-Invite/issues/227,
-  https://github.com/OpenConext/OpenConext-Invite/issues/228,
-  https://github.com/OpenConext/OpenConext-Invite/issues/291
+https://github.com/OpenConext/OpenConext-Invite/issues/302,
+https://github.com/OpenConext/OpenConext-Invite/issues/240,
+https://github.com/OpenConext/OpenConext-Invite/issues/298,
+https://github.com/OpenConext/OpenConext-Invite/issues/296,
+https://github.com/OpenConext/OpenConext-Invite/issues/295,
+https://github.com/OpenConext/OpenConext-Invite/issues/297,
+https://github.com/OpenConext/OpenConext-Invite/issues/239,
+https://github.com/OpenConext/OpenConext-Invite/issues/239,
+https://github.com/OpenConext/OpenConext-Invite/issues/241,
+https://github.com/OpenConext/OpenConext-Invite/issues/241,
+https://github.com/OpenConext/OpenConext-Invite/issues/293,
+https://github.com/OpenConext/OpenConext-Invite/issues/235,
+https://github.com/OpenConext/OpenConext-Invite/issues/235,
+https://github.com/OpenConext/OpenConext-Invite/issues/234,
+https://github.com/OpenConext/OpenConext-Invite/issues/232,
+https://github.com/OpenConext/OpenConext-Invite/issues/232,
+https://github.com/OpenConext/OpenConext-Invite/issues/233,
+https://github.com/OpenConext/OpenConext-Invite/issues/233,
+https://github.com/OpenConext/OpenConext-Invite/issues/231,
+https://github.com/OpenConext/OpenConext-Invite/issues/230,
+https://github.com/OpenConext/OpenConext-Invite/issues/227,
+https://github.com/OpenConext/OpenConext-Invite/issues/228,
+https://github.com/OpenConext/OpenConext-Invite/issues/291
 
 ## 0.0.19 2024-09-10
 
@@ -353,8 +147,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fix styling of welcome deadend on medium screens
 - Make clear on welcome/profile which are your actual guest roles and for which you have a different authority
 - Fix wrong explanation with override invite settings option
-- Voot and invite-AA endpoints will only return roles the user is actually a guest in, not a different authority, just
-  like provisioning already works
+- Voot and invite-AA endpoints will only return roles the user is actually a guest in, not a different authority, just like provisioning already works
 - Unbreak 'also invite as guest' when a user upgrades their own role
 - Support updating changed attributes in SCIM
 - Provisionings now show created date

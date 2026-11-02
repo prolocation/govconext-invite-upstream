@@ -1,7 +1,6 @@
 import React, {useState} from "react";
 import {Modal,} from "@surfnet/sds";
 import I18n from "../locale/I18n";
-import {isEmpty} from "../utils/Utils";
 
 
 export default function ConfirmationDialog({
@@ -37,7 +36,6 @@ export default function ConfirmationDialog({
             confirmationButtonLabel={confirmationTxt}
             confirmDisabled={disabledConfirm || (busy && cancel)}
             subTitle={null}
-            focusConfirm={!disabledConfirm && isEmpty(children)}
             full={largeWidth}/>
     );
 

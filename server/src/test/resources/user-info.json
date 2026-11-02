@@ -1,6 +1,5 @@
 {
   "eduperson_principal_name": "eduperson_principal_name",
-  "authenticating_authority": "http://mock-idp",
   "email": "email",
   "email_verified": true,
   "family_name": "Doe",

@@ -4,8 +4,8 @@ import "./EmailField.scss";
 import {isEmpty, stopEvent} from "../utils/Utils";
 import I18n from "../locale/I18n";
 import {validEmailRegExp} from "../validations/regExps";
-import CloseIcon from "@surfnet/sds/icons/functional-icons/close.svg";
-import MailIcon from "@surfnet/sds/icons/functional-icons/id-2.svg";
+import {ReactComponent as CloseIcon} from "@surfnet/sds/icons/functional-icons/close.svg";
+import {ReactComponent as MailIcon} from "@surfnet/sds/icons/functional-icons/id-2.svg";
 
 export default function EmailField({
                                        name,
@@ -15,13 +15,10 @@ export default function EmailField({
                                        pinnedEmails = [],
                                        error = false,
                                        grabFocus = true,
-                                       required = false,
-                                       maxEmails = null,
-                                       maxEmailsMessage = null
+                                       required = false
                                    }) {
 
     const [emailErrors, setEmailErrors] = useState([]);
-    const [displayMaxEmailMessage, setDisplayMaxEmailMessage] = useState(false);
     const [value, setValue] = useState("");
 
     const refContainer = useRef(null);
@@ -65,9 +62,9 @@ export default function EmailField({
         const email = e.target.value;
         const invalidEmails = [];
         const delimiters = [",", " ", ";", "\n", "\t"];
-        let localEmails;
+        let emails;
         if (!isEmpty(email) && email.indexOf("<") > -1) {
-            localEmails = email.split(/[,\n\t;]/)
+            emails = email.split(/[,\n\t;]/)
                 .map(e => e.trim())
                 .filter(part => {
                     const indexOf = part.indexOf("<");
@@ -77,26 +74,20 @@ export default function EmailField({
         } else if (!isEmpty(email) && delimiters.some(delimiter => email.indexOf(delimiter) > -1)) {
             const replacedEmails = email.replace(/[;\s]/g, ",");
             const splitEmails = replacedEmails.split(",");
-            localEmails = splitEmails
+            emails = splitEmails
                 .filter(part => validateEmail(part, invalidEmails));
         } else if (!isEmpty(email)) {
             const valid = validEmailRegExp.test(email.trim());
             if (valid) {
-                localEmails = [email];
+                emails = [email];
             } else {
                 invalidEmails.push(email.trim());
             }
         }
         setEmailErrors((!isEmpty(e.target.value) && !isEmpty(invalidEmails)) ? invalidEmails : []);
-        const uniqueEmails = [...new Set(localEmails)];
-        const nbrOfEmails = (emails || []).length + uniqueEmails.length;
-        if (!isEmpty(uniqueEmails) && (isEmpty(maxEmails) || nbrOfEmails <= maxEmails)) {
+        const uniqueEmails = [...new Set(emails)];
+        if (!isEmpty(uniqueEmails)) {
             addEmails(uniqueEmails);
-        }
-        if (!isEmpty(maxEmails) && nbrOfEmails > maxEmails) {
-            setDisplayMaxEmailMessage(true);
-        } else {
-            setDisplayMaxEmailMessage(false);
         }
         setValue("");
     };
@@ -146,10 +137,6 @@ export default function EmailField({
             {(!isEmpty(emailErrors) && value === "") && <p className="error">
                 {I18n.t("invitations.invalidEmails", {emails: Array.from(new Set(emailErrors)).join(", ")})}
             </p>}
-            {(displayMaxEmailMessage && !isEmpty(maxEmailsMessage)) && <p className="error">
-                {maxEmailsMessage}
-            </p>}
-
         </div>
     );
 }

@@ -1,15 +1,15 @@
 import I18n from "../locale/I18n";
 import React, {useState} from "react";
 import "./UserMenu.scss";
-import {Link, useNavigate} from "react-router";
+import {Link, useNavigate} from "react-router-dom";
 import {stopEvent} from "../utils/Utils";
 import {UserInfo} from "@surfnet/sds";
 import {useAppStore} from "../stores/AppStore";
 import {logout} from "../api";
-import {AUTHORITIES, highestAuthority} from "../utils/UserRole";
+import {highestAuthority} from "../utils/UserRole";
 
 
-export const UserMenu = ({user, actions}) => {
+export const UserMenu = ({user, config, actions}) => {
     const navigate = useNavigate();
 
     const [dropDownActive, setDropDownActive] = useState(false);
@@ -32,24 +32,12 @@ export const UserMenu = ({user, actions}) => {
     }
 
     const renderMenu = adminLinks => {
-        const authority = highestAuthority(user);
-        const apiTokenLink = authority === AUTHORITIES.INVITER || authority === AUTHORITIES.MANAGER ||
-            authority === AUTHORITIES.APPLICATION_MANAGER || authority === AUTHORITIES.INSTITUTION_ADMIN;
         return (<>
                 <ul>
                     {user.superUser && adminLinks.map(l =>
                         <li key={l}>
                             <Link onClick={toggleUserMenu} to={`/${l}`}>{I18n.t(`header.links.${l}`)}</Link>
                         </li>)}
-                    {apiTokenLink && <li>
-                        <Link onClick={toggleUserMenu} to={`/tokens`}>{I18n.t(`header.links.tokens`)}</Link>
-                    </li>}
-                    {(!user.superUser && user.institutionAdmin && user.organizationGUID) && <li>
-                        <Link onClick={toggleUserMenu} to={`/institution-admins`}>{I18n.t(`header.links.colleagues`)}</Link>
-                    </li>}
-                    {(user.superUser || (user.institutionAdmin && user.organizationGUID)) && <li>
-                        <Link onClick={toggleUserMenu} to={`/audit`}>{I18n.t(`header.links.audit`)}</Link>
-                    </li>}
                     <li>
                         <Link onClick={toggleUserMenu} to={`/profile`}>{I18n.t(`header.links.profile`)}</Link>
                     </li>

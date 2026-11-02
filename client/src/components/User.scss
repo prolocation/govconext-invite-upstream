@@ -1,31 +1,17 @@
-@use "../styles/vars";
+@import "../styles/vars";
 
 section.user {
     display: grid;
     grid-template-columns: [first] 1fr [second] 1fr;
     column-gap: 50px;
 
-    @media (max-width: vars.$medium) {
+    @media (max-width: $medium) {
         grid-template-columns: [first] 1fr;
         padding: 0 15px;
     }
 
     .span-row {
         grid-column: 1 / -1;
-
-    }
-
-    p.label {
-        font-weight: 600;
-        margin: 20px 0 15px 0;
-    }
-
-    ul.admins {
-        list-style: circle;
-
-        li {
-            margin-left: 20px;
-        }
 
     }
 
@@ -48,7 +34,7 @@ section.user {
         min-height: 40px;
         justify-content: space-between;
 
-        @media (max-width: vars.$medium) {
+        @media (max-width: $medium) {
             flex-direction: column;
             align-items: normal;
         }
@@ -58,7 +44,7 @@ section.user {
             display: flex;
             margin-left: auto;
 
-            @media (max-width: vars.$medium) {
+            @media (max-width: $medium) {
                 margin-left: 0;
                 margin-top: 20px;
 
@@ -71,7 +57,7 @@ section.user {
                 flex-grow: 2;
                 min-width: 360px;
 
-                @media (max-width: vars.$medium) {
+                @media (max-width: $medium) {
                     min-width: 0;
                 }
             }
@@ -93,7 +79,7 @@ section.user {
             height: 90px;
             width: auto;
             margin: 0 35px auto 0;
-            border-radius: vars.$br;
+            border-radius: $br;
             border: 1px solid var(--sds--color--gray--300);
             padding: 16px;
 

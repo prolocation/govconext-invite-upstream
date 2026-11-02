@@ -5,7 +5,7 @@ import I18n from "../locale/I18n";
 import {isEmpty} from "../utils/Utils";
 
 
-export const RoleMetaData = ({role, provider, user}, index) => {
+export const RoleMetaData = ({role, provider, user}) => {
     if (isEmpty((user))) {
         return null;
     }
@@ -13,12 +13,12 @@ export const RoleMetaData = ({role, provider, user}, index) => {
     const items = [
         {
             label: I18n.t("users.organisation"),
-            values: [<span key={index}>{organisation}</span>]
+            values: [<span>{organisation}</span>]
         },
         {
             label: I18n.t("users.expiryDays"),
             values: [
-                <span key={index}>{role.defaultExpiryDays}</span>]
+                <span>{role.defaultExpiryDays}</span>]
         }
 
     ]

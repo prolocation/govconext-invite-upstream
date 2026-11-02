@@ -5,7 +5,6 @@ node_modules/
 !**/src/test/**/target/
 docs/invite.archimate.bak
 /yamllint-*
-dist/
 
 ### STS ###
 .apt_generated
@@ -45,11 +44,4 @@ private_key_pkcs8.pem
 JSON.md
 spieldata
 teams-api-calls.md
-client/locale_parser.js
-PlayGroundTest.java
-spieldata
-
-.invite-*-config
-SPRING_MIGRATION.md
-access
-DesignSystem
+.run/

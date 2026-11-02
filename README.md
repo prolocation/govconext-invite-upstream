@@ -9,9 +9,7 @@
 ### [System Requirements](#system-requirements)
 
 - Java 21
-- Maven 3+
-- Node (nvm)
-- Yarn
+- Maven 3
 
 First install Java 21 with a package manager
 and then export the correct the `JAVA_HOME`. For example on macOS:
@@ -20,71 +18,32 @@ and then export the correct the `JAVA_HOME`. For example on macOS:
 export JAVA_HOME=/Library/Java/JavaVirtualMachines/openjdk-21.jdk/Contents/Home/
 ```
 
-MariaDB and Mailpit in docker for local development.
-
-```bash
-docker compose up -d
-```
-
 Then create the MySQL database:
 
 ```sql
 DROP DATABASE IF EXISTS invite;
 CREATE DATABASE invite CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-CREATE USER 'invite'@'%' IDENTIFIED BY 'secret';
-GRANT ALL privileges ON `invite`.* TO 'invite'@'%';
+CREATE USER 'invite'@'localhost' IDENTIFIED BY 'secret';
+GRANT ALL privileges ON `invite`.* TO 'invite'@'localhost';
 ```
-
-Note: for MariaDB `COLLATE utf8mb4_0900_ai_ci` might not work and can be left out
 
 ### [Building and running](#building-and-running)
 
 This project uses Spring Boot and Maven. To run locally, type:
 
 ```bash
-cd server 
 mvn spring-boot:run
 ```
 
-Install client frontend dependencies
+To build and deploy (the latter requires credentials in your maven settings):
 
 ```bash
-cd client 
-nvm use
-yarn install
-```
-
-Install welcome frontend dependencies
-
-```bash
-cd welcome 
-nvm use
-yarn install
-```
-
-Run the client frontend <http://localhost:3000>
-
-```bash
-cd client
-yarn start
-```
-
-Run the welcome frontend <http://localhost:4000>
-
-```bash
-cd welcome
-yarn start
-```
-
-Run the server backend
-
-```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=dev -Dmaven.test.skip=true
+mvn clean deploy
 ```
 
 ### [Mail](#mail)
 
-In the default `application.yml` the mail host is `localhost` and the port is `1025`. Run mailpit to capture mails.
+In the default `application.properties` the mail host is `localhost` and the port is `1025`. Run mailpit to capture mails.
 See <https://github.com/axllent/mailpit>
 
 ### [Endpoints](#endpoints)
@@ -145,7 +104,7 @@ Login with Mujina IdP and user `admin` to become super-user in the local environ
 
 ### [Institution Admin](#institution-admin)
 
-To become an institution admin in invite, add the following values as `eduPersonEntitlements` attributes using Mujina:
+To become an institution admin in invite, add the following values as `eduPersonEntitlements` using Mujina:
 
 - urn:mace:surfnet.nl:surfnet.nl:sab:organizationGUID:ad93daef-0911-e511-80d0-005056956c1a
 - urn:mace:surfnet.nl:surfnet.nl:sab:role:SURFconextverantwoordelijke
@@ -183,40 +142,4 @@ openssl rsa -pubout -in private_key.pem -out public_key.pem
 
 ```bash
 openssl pkcs8 -topk8 -in private_key.pem -inform pem -out private_key_pkcs8.pem -outform pem -nocrypt
-```
-
-## Deploy
-
-To build and deploy (the latter requires credentials in your maven settings):
-
-```bash
-mvn clean deploy
-```
-
-## [Upgrade](#upgrade)
-
-To check the pom.xml with the latest versions, run
-
-```bash
-cd server
-mvn versions:display-dependency-updates -DprocessDependencyManagement=false -DdependencyIncludes=*:*
-```
-
-To see the latest versions report for the client run
-
-```bash
-cd client
-nvm use
-yarn outdated
-```
-
-## CRM
-
-CRM api calls have been added to enable migration from a legacy application called SAB (SURF Autorisatie Beheer).
-These api calls are actively used to integrate with the enterprise role administration system.
-
-With the following `cUrl` one can check the sync status
-
-```bash
-curl -H "accept: application/json" -H "X-API-TOKEN: super-user-token" "https://invite.test.surfconext.nl/api/external/v1/system/landing-page-fix"
 ```

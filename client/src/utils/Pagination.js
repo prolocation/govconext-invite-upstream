@@ -1,5 +1,4 @@
 import {isEmpty} from "./Utils";
-import {getParameterByName} from "./QueryParameters";
 
 export const pageCount = 10;
 
@@ -33,22 +32,10 @@ export const paginationQueryParams = (page, queryParams = {}) => {
 export const defaultPagination = (sort = "name", sortDirection = "ASC") => {
     const dp = {
         query: "",
-        pageNumber: searchParameterFromQueryParams("page", true, 1) - 1,
+        pageNumber: 0,
         pageSize: pageCount,
-        sort: searchParameterFromQueryParams("sort", false, sort),
-        sortDirection: searchParameterFromQueryParams("sortDirection", false, sortDirection)
+        sort: sort,
+        sortDirection: sortDirection
     };
     return {...dp};
-}
-
-export const storeSearchQueryParameter = (parameterName, value) => {
-    const url = new URL(window.location);
-    url.searchParams.set(parameterName, value);
-    window.history.pushState({[parameterName]: value}, "", url);
-}
-
-export const searchParameterFromQueryParams = (parameterName, isNumeric, defaultValue) => {
-    const parameterByName = getParameterByName(parameterName, window.location.search);
-    const value = parameterByName || defaultValue;
-    return isNumeric ? parseInt(value, 10) : value;
 }

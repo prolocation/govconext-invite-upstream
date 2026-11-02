@@ -1,5 +1,5 @@
 import React from "react";
-import CloseIcon from "@surfnet/sds/icons/functional-icons/close.svg";
+import {ReactComponent as CloseIcon} from "@surfnet/sds/icons/functional-icons/close.svg";
 import {Tooltip} from "@surfnet/sds";
 import "./CreatableField.scss";
 import {isEmpty, stopEvent} from "../utils/Utils";

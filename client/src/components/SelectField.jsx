@@ -9,14 +9,13 @@ export default function SelectField({
                                         onChange, name, value, options, placeholder = "", disabled = false,
                                         toolTip = null, searchable = false, small = false,
                                         clearable = false, isMulti = false, creatable = false,
-                                        onInputChange = null, required = false, className = "",
-                                        children
+                                        onInputChange = null, required = false
                                     }) {
     return (
-        <div className={`select-field ${className}`}>
-            {name && <label htmlFor={name}>{name}{required && <sup className="required">*</sup>}
+        <div className="select-field">
+            <label htmlFor={name}>{name}{required && <sup className="required">*</sup>}
                 {toolTip && <Tooltip tip={toolTip}/>}
-            </label>}
+            </label>
             {creatable &&
                 <CreatableSelect
                     className={`input-select-inner creatable`}
@@ -43,7 +42,6 @@ export default function SelectField({
                 isSearchable={searchable}
                 isClearable={clearable}
             />}
-            {children && children}
         </div>
     );
 }

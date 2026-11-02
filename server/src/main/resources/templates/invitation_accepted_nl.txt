@@ -1,5 +1,0 @@
-Hoi {{inviter.name}},
-
-Je uitnodiging voor {{roles}} is geaccepteerd door gebruiker {{name}}.
-
-{{> footer_nl.txt}}

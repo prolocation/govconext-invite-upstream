@@ -1,14 +1,14 @@
 import I18n from "../locale/I18n";
 import React, {useState} from "react";
 import "./UserMenu.scss";
-import {useNavigate} from "react-router";
+import {useNavigate} from "react-router-dom";
 import {isEmpty, stopEvent} from "../utils/Utils";
 import {UserInfo} from "@surfnet/sds";
 import {useAppStore} from "../stores/AppStore";
 import {logout} from "../api";
 
 
-export const UserMenu = ({user, actions}) => {
+export const UserMenu = ({user, config, actions}) => {
     const navigate = useNavigate();
 
     const [dropDownActive, setDropDownActive] = useState(false);

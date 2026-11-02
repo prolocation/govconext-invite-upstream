@@ -1,7 +1,7 @@
 import React from "react";
 import "./Page.scss";
 
-export const Page = ({children}) => {
+export const Page = ({Icon, label, name, children}) => {
 
     return (
         <div className="page">

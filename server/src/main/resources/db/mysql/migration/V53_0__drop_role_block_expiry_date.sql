@@ -1,1 +1,0 @@
-ALTER TABLE `roles` DROP `block_expiry_date`;

@@ -2,7 +2,7 @@ import React from "react";
 import "./SwitchField.scss";
 import {Switch} from "@surfnet/sds";
 
-export default function SwitchField({name, value, onChange, label, info, last = false, disabled= false}) {
+export default function SwitchField({name, value, onChange, label, info, last = false}) {
     return (
         <div className={`switch-field ${last ? "last" : ""}`}>
             <div className={"inner-switch"}>
@@ -11,7 +11,6 @@ export default function SwitchField({name, value, onChange, label, info, last = 
             </div>
             <Switch name={name}
                     value={value}
-                    disabled={disabled}
                     onChange={onChange}/>
         </div>
 

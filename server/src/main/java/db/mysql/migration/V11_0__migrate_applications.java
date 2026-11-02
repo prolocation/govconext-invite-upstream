@@ -1,8 +1,8 @@
 package db.mysql.migration;
 
-import invite.config.ObjectMapperHolder;
-import invite.manage.EntityType;
-import invite.model.Application;
+import access.config.ObjectMapperHolder;
+import access.manage.EntityType;
+import access.model.Application;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;

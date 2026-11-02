@@ -2,13 +2,13 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+        <layout class="ch.qos.logback.classic.PatternLayout">
             <Pattern>
                 %d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n
             </Pattern>
-        </encoder>
+        </layout>
     </appender>
-    <logger name="invite" level="DEBUG"/>
+    <logger name="access" level="DEBUG"/>
     <logger name="org.springframework.security" level="INFO"/>
     <logger name="org.mariadb.jdbc.message.server" level="ERROR"/>
     <logger name="com.zaxxer.hikari" level="ERROR"/>

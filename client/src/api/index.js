@@ -95,27 +95,6 @@ export function other(id) {
     return fetchJson(`/api/v1/users/other/${id}`, {}, {}, false);
 }
 
-export function institutionAdminsbyRole(roleId) {
-    return fetchJson(`/api/v1/users/institution-admins/${roleId}`, {}, {}, false);
-}
-
-export function applicationManagers() {
-    return fetchJson("/api/v1/users/applicationManagers", {}, {}, false);
-}
-
-export function institutionAdmins(includeMe=false) {
-    const queryPart = includeMe ? "?includeMe=true" : ""
-    return fetchJson(`/api/v1/users/institutionAdmins${queryPart}`, {}, {}, false);
-}
-
-export function removeInstitutionAdmin(user) {
-    return postPutJson(`/api/v1/users/removeInstitutionAdmin/${user.id}`, {}, "PUT", false);
-}
-
-export function removeApplicationManager(user) {
-    return postPutJson(`/api/v1/users/removeApplicationManager/${user.id}`, {}, "PUT", false);
-}
-
 export function searchUsers(pagination = {}) {
     const queryPart = paginationQueryParams(pagination, {})
     return fetchJson(`/api/v1/users/search?${queryPart}`);
@@ -138,9 +117,6 @@ export function reportError(error) {
     return postPutJson("/api/v1/users/error", error, "post");
 }
 
-export function deleteUser(userId) {
-    return fetchDelete(`/api/v1/users/${userId}`);
-}
 //Invitations
 export function invitationByHash(hash) {
     return fetchJson(`/api/v1/invitations/public?hash=${hash}`, {}, {}, false);
@@ -157,10 +133,6 @@ export function acceptInvitation(hash, invitationId) {
 
 export function invitationsByRoleId(roleId) {
     return fetchJson(`/api/v1/invitations/roles/${roleId}`, {}, {}, false);
-}
-
-export function invitationsMine() {
-    return fetchJson("/api/v1/invitations/mine", {}, {}, false);
 }
 
 export function resendInvitation(invitationId) {
@@ -188,38 +160,17 @@ export function allProviders() {
     return fetchJson("/api/v1/manage/providers");
 }
 
-export function eduidIdentityProvider() {
-    return fetchJson("/api/v1/manage/eduid-identity-provider");
-}
-
-export function requestedAuthnContextValues() {
-    return fetchJson("/api/v1/manage/requested-authn-context-values");
-}
-
-export function applicationsFromManage() {
+export function allApplications() {
     return fetchJson("/api/v1/manage/applications")
 }
 
-export function allApplicationsFromManage() {
-    return fetchJson("/api/v1/manage/all-applications")
+export function organizationGUIDValidation(organizationGUID) {
+    return fetchJson(`/api/v1/manage/organization-guid-validation/${organizationGUID}`, {}, {}, false);
 }
-
-export function hasProvisionings(manageId) {
-    return fetchJson(`/api/v1/manage/provisionings/${manageId}`);
-}
-
-export function allIdentityProviders() {
-    return fetchJson("/api/v1/manage/identity-providers");
-}
-
-export function applicationsForInstitutionAdmin() {
-    return fetchJson("/api/v1/manage/application-institution-admin");
-}
-
 
 //Roles
 export function rolesByApplication(force = true, pagination = {}) {
-    const queryPart = paginationQueryParams(pagination, {force: !!force});
+    const queryPart = paginationQueryParams(pagination, {force: !!force})
     return fetchJson(`/api/v1/roles?${queryPart}`);
 }
 
@@ -258,7 +209,7 @@ export function updateUserRoleEndData(userRoleId, endDate) {
 }
 
 export function consequencesRoleDeletion(roleId) {
-    return fetchJson(`/api/v1/user_roles/consequences/${roleId}`, {}, {}, true);
+    return fetchJson(`/api/v1/user_roles//consequences/${roleId}`, {}, {}, true);
 }
 
 export function deleteUserRole(userRoleId, isGuest) {
@@ -274,9 +225,8 @@ export function generateToken() {
     return fetchJson("/api/v1/tokens/generate-token");
 }
 
-export function createToken(description, organizationGUID) {
-    const body = {description: description, organizationGUID: organizationGUID};
-    return postPutJson("/api/v1/tokens", body, "POST");
+export function createToken(description) {
+    return postPutJson("/api/v1/tokens", {description: description}, "POST");
 }
 
 export function deleteToken(token) {
@@ -309,13 +259,4 @@ export function performanceSeed() {
 
 export function rolesUnknownInManage() {
     return fetchJson("/api/v1/system/unknown-roles")
-}
-//Audit
-export function searchUserRoleAudits(pagination = {}, roleId = null) {
-    const queryPart = paginationQueryParams(pagination, {roleId: roleId});
-    return fetchJson(`/api/v1/user_roles_audit/search?${queryPart}`);
-}
-
-export function fetchRoles() {
-    return fetchJson("/api/v1/user_roles_audit/roles");
 }

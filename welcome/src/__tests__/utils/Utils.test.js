@@ -1,9 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import React from "react";
 import {
     sanitizeURL
 } from "../../utils/Utils";
-describe('Utils', () => {
-    it("Test sanitizeURL", () => {
-        expect(sanitizeURL("https://invite.test2.surfconext.nl")).toEqual("https://invite.test2.surfconext.nl");
-    });
+
+test("Test sanitizeURL", () => {
+    expect(sanitizeURL("https://invite.test2.surfconext.nl")).toEqual("https://invite.test2.surfconext.nl");
 });
